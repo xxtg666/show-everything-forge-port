@@ -1,0 +1,61 @@
+package dev.minerslab.showeverything.command;
+
+import java.util.Collections;
+import java.util.List;
+
+import dev.minerslab.showeverything.util.ChatComponents;
+import dev.minerslab.showeverything.util.Raycasts;
+import net.minecraft.command.CommandBase;
+import net.minecraft.command.CommandException;
+import net.minecraft.command.EntityNotFoundException;
+import net.minecraft.command.ICommandSender;
+import net.minecraft.command.WrongUsageException;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
+
+public class ShowEntityCommand extends CommandBase {
+    @Override
+    public String getName() {
+        return "show-entity";
+    }
+
+    @Override
+    public List<String> getAliases() {
+        return Collections.singletonList("showentity");
+    }
+
+    @Override
+    public String getUsage(ICommandSender sender) {
+        return "/show-entity [selector]";
+    }
+
+    @Override
+    public int getRequiredPermissionLevel() {
+        return 0;
+    }
+
+    @Override
+    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException, EntityNotFoundException {
+        EntityPlayerMP player = getCommandSenderAsPlayer(sender);
+        Entity entity;
+        if (args.length == 0) {
+            RayTraceResult hit = Raycasts.entity(player, 15.0D);
+            entity = hit != null && hit.entityHit != null ? hit.entityHit : player;
+        } else if (args.length == 1) {
+            entity = getEntity(server, sender, args[0]);
+        } else {
+            throw new WrongUsageException(getUsage(sender));
+        }
+
+        ITextComponent message = new TextComponentString("");
+        message.appendSibling(ChatComponents.entity(entity));
+        message.appendText(" ");
+        message.appendSibling(ChatComponents.labelValue("uuid ", entity.getUniqueID().toString()));
+        message.appendSibling(ChatComponents.position(entity.getPosition()));
+        ChatComponents.broadcast(server, player, message);
+    }
+}

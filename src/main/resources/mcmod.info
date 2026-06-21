@@ -1,15 +1,15 @@
 [
 {
-  "modid": "template_mod",
-  "name": "Forge Template Mod",
-  "description": "Example forge mod.",
+  "modid": "showeverything",
+  "name": "Show Everything",
+  "description": "Show your items, blocks, fluids, and entities in chat.",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "url": "",
+  "url": "https://github.com/MinersLab/show-everything",
   "updateUrl": "",
-  "authorList": ["ExampleDude"],
-  "credits": "The Forge and FML guys, for making this example",
-  "logoFile": "",
+  "authorList": ["WowStarWorld", "MinersLab"],
+  "credits": "Original mod by MinersLab/WowStarWorld",
+  "logoFile": "assets/showeverything/icon.png",
   "screenshots": [],
   "dependencies": []
 }
