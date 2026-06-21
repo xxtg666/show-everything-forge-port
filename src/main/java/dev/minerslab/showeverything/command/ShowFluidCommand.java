@@ -78,6 +78,7 @@ public class ShowFluidCommand extends CommandBase {
         message.appendSibling(ChatComponents.item(stack));
         message.appendText(" ");
         message.appendSibling(ChatComponents.labelValue("id ", fluidId(fluid)));
+        message.appendText(" ");
         message.appendSibling(ChatComponents.position(pos));
         ChatComponents.broadcast(server, player, message);
     }

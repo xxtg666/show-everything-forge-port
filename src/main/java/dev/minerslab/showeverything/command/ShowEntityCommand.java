@@ -60,6 +60,7 @@ public class ShowEntityCommand extends CommandBase {
         message.appendSibling(ChatComponents.labelValue("id ", entityId(entity)));
         message.appendText(" ");
         message.appendSibling(ChatComponents.labelValue("uuid ", entity.getUniqueID().toString()));
+        message.appendText(" ");
         message.appendSibling(ChatComponents.position(entity.getPosition()));
         ChatComponents.broadcast(server, player, message);
     }

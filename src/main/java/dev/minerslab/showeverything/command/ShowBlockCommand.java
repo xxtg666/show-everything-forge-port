@@ -76,6 +76,7 @@ public class ShowBlockCommand extends CommandBase {
         message.appendSibling(ChatComponents.item(stack));
         message.appendText(" ");
         message.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(block)));
+        message.appendText(" ");
         message.appendSibling(ChatComponents.position(pos));
         ChatComponents.broadcast(server, player, message);
     }
