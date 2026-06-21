@@ -53,7 +53,7 @@ public class ShowFluidCommand extends CommandBase {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
         BlockPos pos;
         if (args.length == 0) {
-            RayTraceResult hit = Raycasts.blocks(player, 15.0D, false);
+            RayTraceResult hit = Raycasts.blocks(player, 15.0D, true);
             pos = hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK ? hit.getBlockPos() : player.getPosition();
         } else if (args.length == 3) {
             pos = parseBlockPos(sender, args, 0, false);
@@ -68,10 +68,7 @@ public class ShowFluidCommand extends CommandBase {
 
         IBlockState state = world.getBlockState(pos);
         Fluid fluid = fluidFromBlock(state.getBlock());
-        ItemStack stack = fluid != null ? FluidUtil.getFilledBucket(new FluidStack(fluid, Fluid.BUCKET_VOLUME)) : ItemStack.EMPTY;
-        if (stack.isEmpty()) {
-            stack = new ItemStack(Items.BUCKET);
-        }
+        ItemStack stack = bucketFor(fluid);
         ITextComponent message = new TextComponentString("");
         message.appendSibling(ChatComponents.item(stack));
         message.appendText(" ");
@@ -91,5 +88,21 @@ public class ShowFluidCommand extends CommandBase {
             return FluidRegistry.LAVA;
         }
         return null;
+    }
+
+    private static ItemStack bucketFor(Fluid fluid) {
+        if (fluid == FluidRegistry.WATER) {
+            return new ItemStack(Items.WATER_BUCKET);
+        }
+        if (fluid == FluidRegistry.LAVA) {
+            return new ItemStack(Items.LAVA_BUCKET);
+        }
+        if (fluid != null) {
+            ItemStack stack = FluidUtil.getFilledBucket(new FluidStack(fluid, Fluid.BUCKET_VOLUME));
+            if (!stack.isEmpty()) {
+                return stack;
+            }
+        }
+        return new ItemStack(Items.BUCKET);
     }
 }

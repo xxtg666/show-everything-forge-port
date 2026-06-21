@@ -52,7 +52,7 @@ public class ShowBlockCommand extends CommandBase {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
         BlockPos pos;
         if (args.length == 0) {
-            RayTraceResult hit = Raycasts.blocks(player, 15.0D, true);
+            RayTraceResult hit = Raycasts.blocks(player, 15.0D, false);
             pos = hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK ? hit.getBlockPos() : player.getPosition();
         } else if (args.length == 3) {
             pos = parseBlockPos(sender, args, 0, false);
