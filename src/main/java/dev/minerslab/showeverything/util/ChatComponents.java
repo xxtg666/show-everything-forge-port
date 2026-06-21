@@ -13,6 +13,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.entity.player.EntityPlayerMP;
 
@@ -45,6 +46,7 @@ public final class ChatComponents {
         ITextComponent valueComponent = new TextComponentString(value);
         valueComponent.getStyle()
                 .setColor(TextFormatting.GREEN)
+                .setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, value))
                 .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(value)));
         component.appendSibling(valueComponent);
         return component;
@@ -57,6 +59,7 @@ public final class ChatComponents {
         ITextComponent valueComponent = new TextComponentString(shortPos);
         valueComponent.getStyle()
                 .setColor(TextFormatting.GREEN)
+                .setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, shortPos))
                 .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(shortPos)));
         component.appendSibling(valueComponent);
         return component;
@@ -73,7 +76,10 @@ public final class ChatComponents {
     }
 
     public static void broadcast(MinecraftServer server, EntityPlayerMP sender, ITextComponent message) {
-        ITextComponent chat = sender.getDisplayName().createCopy();
+        ITextComponent chat = new TextComponentString("");
+        ITextComponent senderName = new TextComponentString(sender.getDisplayNameString());
+        senderName.setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/msg " + sender.getName() + " ")));
+        chat.appendSibling(senderName);
         chat.appendText(": ");
         chat.appendSibling(message);
         server.getPlayerList().sendMessage(chat);

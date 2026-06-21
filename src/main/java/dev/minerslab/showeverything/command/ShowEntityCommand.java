@@ -11,8 +11,10 @@ import net.minecraft.command.EntityNotFoundException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
@@ -54,8 +56,15 @@ public class ShowEntityCommand extends CommandBase {
         ITextComponent message = new TextComponentString("");
         message.appendSibling(ChatComponents.entity(entity));
         message.appendText(" ");
+        message.appendSibling(ChatComponents.labelValue("id ", entityId(entity)));
+        message.appendText(" ");
         message.appendSibling(ChatComponents.labelValue("uuid ", entity.getUniqueID().toString()));
         message.appendSibling(ChatComponents.position(entity.getPosition()));
         ChatComponents.broadcast(server, player, message);
+    }
+
+    private static String entityId(Entity entity) {
+        ResourceLocation id = EntityList.getKey(entity);
+        return id == null ? "unknown" : id.toString();
     }
 }

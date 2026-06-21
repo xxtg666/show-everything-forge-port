@@ -72,7 +72,7 @@ public class ShowFluidCommand extends CommandBase {
         ITextComponent message = new TextComponentString("");
         message.appendSibling(ChatComponents.item(stack));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.labelValue("id ", fluid != null ? fluid.getName() : ChatComponents.registryName(state.getBlock())));
+        message.appendSibling(ChatComponents.labelValue("id ", fluidId(fluid, state.getBlock())));
         message.appendSibling(ChatComponents.position(pos));
         ChatComponents.broadcast(server, player, message);
     }
@@ -104,5 +104,22 @@ public class ShowFluidCommand extends CommandBase {
             }
         }
         return new ItemStack(Items.BUCKET);
+    }
+
+    private static String fluidId(Fluid fluid, Block block) {
+        if (fluid == FluidRegistry.WATER) {
+            return "minecraft:water";
+        }
+        if (fluid == FluidRegistry.LAVA) {
+            return "minecraft:lava";
+        }
+        if (fluid != null) {
+            String name = FluidRegistry.getDefaultFluidName(fluid);
+            if (name != null && name.indexOf(':') >= 0) {
+                return name;
+            }
+            return name != null ? "forge:" + name : fluid.getName();
+        }
+        return ChatComponents.registryName(block);
     }
 }
