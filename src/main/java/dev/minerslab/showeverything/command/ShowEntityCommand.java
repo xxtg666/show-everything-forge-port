@@ -2,12 +2,12 @@ package dev.minerslab.showeverything.command;
 
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.EntityNotFoundException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.Entity;
@@ -15,6 +15,7 @@ import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
@@ -41,7 +42,7 @@ public class ShowEntityCommand extends CommandBase {
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException, EntityNotFoundException {
+    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
         Entity entity;
         if (args.length == 0) {
@@ -61,6 +62,11 @@ public class ShowEntityCommand extends CommandBase {
         message.appendSibling(ChatComponents.labelValue("uuid ", entity.getUniqueID().toString()));
         message.appendSibling(ChatComponents.position(entity.getPosition()));
         ChatComponents.broadcast(server, player, message);
+    }
+
+    @Override
+    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
+        return args.length == 1 ? getListOfStringsMatchingLastWord(args, server.getOnlinePlayerNames()) : Collections.emptyList();
     }
 
     private static String entityId(Entity entity) {

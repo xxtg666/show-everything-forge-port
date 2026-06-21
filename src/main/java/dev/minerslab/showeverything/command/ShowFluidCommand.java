@@ -2,6 +2,7 @@ package dev.minerslab.showeverything.command;
 
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
@@ -16,6 +17,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.ITextComponent;
@@ -53,7 +55,7 @@ public class ShowFluidCommand extends CommandBase {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
         BlockPos pos;
         if (args.length == 0) {
-            RayTraceResult hit = Raycasts.blocks(player, 15.0D, true);
+            RayTraceResult hit = Raycasts.blocks(player, 15.0D, true, false);
             pos = hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK ? hit.getBlockPos() : player.getPosition();
         } else if (args.length == 3) {
             pos = parseBlockPos(sender, args, 0, false);
@@ -68,13 +70,21 @@ public class ShowFluidCommand extends CommandBase {
 
         IBlockState state = world.getBlockState(pos);
         Fluid fluid = fluidFromBlock(state.getBlock());
+        if (fluid == null) {
+            throw new CommandException("No fluid found at %s, %s, %s", pos.getX(), pos.getY(), pos.getZ());
+        }
         ItemStack stack = bucketFor(fluid);
         ITextComponent message = new TextComponentString("");
         message.appendSibling(ChatComponents.item(stack));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.labelValue("id ", fluidId(fluid, state.getBlock())));
+        message.appendSibling(ChatComponents.labelValue("id ", fluidId(fluid)));
         message.appendSibling(ChatComponents.position(pos));
         ChatComponents.broadcast(server, player, message);
+    }
+
+    @Override
+    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
+        return args.length > 0 && args.length <= 3 ? getTabCompletionCoordinate(args, 0, targetPos) : Collections.emptyList();
     }
 
     private static Fluid fluidFromBlock(Block block) {
@@ -106,20 +116,21 @@ public class ShowFluidCommand extends CommandBase {
         return new ItemStack(Items.BUCKET);
     }
 
-    private static String fluidId(Fluid fluid, Block block) {
+    private static String fluidId(Fluid fluid) {
         if (fluid == FluidRegistry.WATER) {
             return "minecraft:water";
         }
         if (fluid == FluidRegistry.LAVA) {
             return "minecraft:lava";
         }
-        if (fluid != null) {
-            String name = FluidRegistry.getDefaultFluidName(fluid);
-            if (name != null && name.indexOf(':') >= 0) {
-                return name;
+        Block block = fluid.getBlock();
+        if (block != null) {
+            ResourceLocation blockId = block.getRegistryName();
+            if (blockId != null) {
+                return blockId.toString();
             }
-            return name != null ? "forge:" + name : fluid.getName();
         }
-        return ChatComponents.registryName(block);
+        String name = FluidRegistry.getDefaultFluidName(fluid);
+        return name != null ? name : fluid.getName();
     }
 }

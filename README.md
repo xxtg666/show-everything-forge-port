@@ -12,7 +12,7 @@ Show items, blocks, fluids, and entities in chat with hover details. The command
 
 ## Installation
 
-1. Build or download `showeverything-1.0.0.jar`.
+1. Build or download `showeverything-1.0.1.jar`.
 2. Put the jar in the server `mods` folder.
 3. Restart the server.
 
@@ -43,11 +43,11 @@ Aliases without hyphens are also registered, such as `/showitem` and `/showblock
 The compiled mod jar is written to:
 
 ```text
-build/libs/showeverything-1.0.0.jar
+build/libs/showeverything-1.0.1.jar
 ```
 
 This repository uses ForgeGradle 2.3 and a Gradle 4.10.3 wrapper so CI can start on modern JDKs. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation.
 
 ## License
 
-This port follows the repository license. The original mod is by MinersLab/WowStarWorld.
+This port is maintained by xxtg666 and follows the repository license. The original mod is by MinersLab/WowStarWorld.

@@ -25,6 +25,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
+import javax.annotation.Nullable;
 
 public class ShowBlockCommand extends CommandBase {
     @Override
@@ -52,7 +53,7 @@ public class ShowBlockCommand extends CommandBase {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
         BlockPos pos;
         if (args.length == 0) {
-            RayTraceResult hit = Raycasts.blocks(player, 15.0D, false);
+            RayTraceResult hit = Raycasts.blocks(player, 15.0D, false, false);
             pos = hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK ? hit.getBlockPos() : player.getPosition();
         } else if (args.length == 3) {
             pos = parseBlockPos(sender, args, 0, false);
@@ -79,12 +80,18 @@ public class ShowBlockCommand extends CommandBase {
         ChatComponents.broadcast(server, player, message);
     }
 
+    @Override
+    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
+        return args.length > 0 && args.length <= 3 ? getTabCompletionCoordinate(args, 0, targetPos) : Collections.emptyList();
+    }
+
     private static void applyTileName(World world, BlockPos pos, ItemStack stack) {
         TileEntity tile = world.getTileEntity(pos);
         if (!(tile instanceof IWorldNameable) || !((IWorldNameable) tile).hasCustomName()) {
             return;
         }
         NBTTagCompound display = stack.getOrCreateSubCompound("display");
-        display.setString("Name", ((IWorldNameable) tile).getName());
+        ITextComponent name = ((IWorldNameable) tile).getDisplayName();
+        display.setString("Name", ITextComponent.Serializer.componentToJson(name));
     }
 }

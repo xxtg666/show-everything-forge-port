@@ -34,34 +34,29 @@ public final class ChatComponents {
     public static ITextComponent entity(Entity entity) {
         ITextComponent component = entity.getDisplayName();
         ResourceLocation type = EntityList.getKey(entity);
-        String name = entity.getDisplayName().getUnformattedText();
-        String json = String.format("{id:\"%s\",type:\"%s\",name:\"%s\"}", entity.getUniqueID(), type == null ? "unknown" : type.toString(), name.replace("\"", "\\\""));
-        component.setStyle(component.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ENTITY, new TextComponentString(json))));
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setString("id", entity.getUniqueID().toString());
+        tag.setString("type", type == null ? "unknown" : type.toString());
+        tag.setString("name", entity.getDisplayName().getUnformattedText());
+        component.setStyle(component.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ENTITY, new TextComponentString(tag.toString()))));
         return component;
     }
 
     public static ITextComponent labelValue(String label, String value) {
-        ITextComponent component = new TextComponentString(label);
-        component.getStyle().setColor(TextFormatting.GRAY);
-        ITextComponent valueComponent = new TextComponentString(value);
-        valueComponent.getStyle()
-                .setColor(TextFormatting.GREEN)
-                .setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, value))
-                .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(value)));
-        component.appendSibling(valueComponent);
-        return component;
+        return token(label.trim(), value);
     }
 
     public static ITextComponent position(BlockPos pos) {
-        String shortPos = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
-        ITextComponent component = new TextComponentString(" at ");
-        component.getStyle().setColor(TextFormatting.GRAY);
-        ITextComponent valueComponent = new TextComponentString(shortPos);
-        valueComponent.getStyle()
+        String shortPos = pos.getX() + " " + pos.getY() + " " + pos.getZ();
+        return token("pos", shortPos);
+    }
+
+    private static ITextComponent token(String label, String value) {
+        ITextComponent component = new TextComponentString("[" + label + "]");
+        component.getStyle()
                 .setColor(TextFormatting.GREEN)
-                .setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, shortPos))
-                .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(shortPos)));
-        component.appendSibling(valueComponent);
+                .setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, value))
+                .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(value)));
         return component;
     }
 

@@ -12,11 +12,11 @@ public final class Raycasts {
     private Raycasts() {
     }
 
-    public static RayTraceResult blocks(EntityPlayerMP player, double distance, boolean stopOnLiquid) {
+    public static RayTraceResult blocks(EntityPlayerMP player, double distance, boolean stopOnLiquid, boolean ignoreBlockWithoutBoundingBox) {
         Vec3d eyes = player.getPositionEyes(1.0F);
         Vec3d look = player.getLook(1.0F);
         Vec3d end = eyes.add(look.x * distance, look.y * distance, look.z * distance);
-        return player.world.rayTraceBlocks(eyes, end, stopOnLiquid, !stopOnLiquid, false);
+        return player.world.rayTraceBlocks(eyes, end, stopOnLiquid, ignoreBlockWithoutBoundingBox, false);
     }
 
     public static RayTraceResult entity(EntityPlayerMP player, double distance) {

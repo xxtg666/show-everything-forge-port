@@ -43,7 +43,7 @@ public class ShowItemCommand extends CommandBase {
             stack = player.getHeldItemOffhand();
         }
         if (stack.isEmpty()) {
-            return;
+            throw new CommandException("You are not holding an item.");
         }
 
         ITextComponent message = new TextComponentString("");
