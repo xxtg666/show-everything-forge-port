@@ -4,6 +4,8 @@ Forge 1.12.2 port of [MinersLab/show-everything](https://github.com/MinersLab/sh
 
 Show items, blocks, fluids, and entities in chat with hover details. The command logic runs on the server, and the mod declares remote clients as optional, so vanilla/Forge clients without this mod can still join.
 
+Clients that also install this mod get enhanced `/show-item` rendering for very large item NBT. Clients without the mod receive a safe shortened hover instead, so oversized NBT cannot kick players through Minecraft 1.12.2's chat packet string limit.
+
 ## Requirements
 
 - Minecraft `1.12.2`
@@ -12,11 +14,11 @@ Show items, blocks, fluids, and entities in chat with hover details. The command
 
 ## Installation
 
-1. Build or download `showeverything-1.0.1.jar`.
+1. Build or download `showeverything-1.0.2.jar`.
 2. Put the jar in the server `mods` folder.
 3. Restart the server.
 
-Client installation is optional. The server will not reject clients just because they do not have this mod installed.
+Client installation is optional. The server will not reject clients just because they do not have this mod installed. Install it client-side only if you want full hover display for very large item NBT.
 
 ## Commands
 
@@ -43,7 +45,7 @@ Aliases without hyphens are also registered, such as `/showitem` and `/showblock
 The compiled mod jar is written to:
 
 ```text
-build/libs/showeverything-1.0.1.jar
+build/libs/showeverything-1.0.2.jar
 ```
 
 This repository uses ForgeGradle 2.3 and a Gradle 4.10.3 wrapper so CI can start on modern JDKs. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation.
