@@ -30,9 +30,7 @@ public final class ChatComponents {
         if (stack.getCount() > 1) {
             component.appendText(stack.getCount() + " * ");
         }
-        component.appendSibling(itemName(stack));
-        String itemNbt = stack.writeToNBT(new NBTTagCompound()).toString();
-        component.setStyle(new Style().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new TextComponentString(itemNbt))));
+        component.appendSibling(stack.getTextComponent());
         return component;
     }
 
@@ -41,17 +39,13 @@ public final class ChatComponents {
         if (stack.getCount() > 1) {
             component.appendText(stack.getCount() + " * ");
         }
-        component.appendSibling(itemName(stack));
+        ItemStack preview = stack.copy();
+        preview.setTagCompound(null);
+        component.appendSibling(preview.getTextComponent());
         int nbtChars = stack.writeToNBT(new NBTTagCompound()).toString().length();
         component.appendText(" ");
         component.appendSibling(infoToken(compactItemHover(stack, nbtChars, clientCanShowFullNbt)));
         return component;
-    }
-
-    private static ITextComponent itemName(ItemStack stack) {
-        ITextComponent name = new TextComponentString(stack.getDisplayName());
-        name.getStyle().setColor(stack.getRarity().color);
-        return name;
     }
 
     private static ITextComponent compactItemHover(ItemStack stack, int nbtChars, boolean clientCanShowFullNbt) {
