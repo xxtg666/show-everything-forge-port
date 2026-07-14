@@ -1,15 +1,19 @@
 package dev.minerslab.showeverything;
 
+import java.util.Map;
+
+import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.Mod.EventHandler;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.network.NetworkCheckHandler;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.relauncher.Side;
 import dev.minerslab.showeverything.command.ShowBlockCommand;
 import dev.minerslab.showeverything.command.ShowEntityCommand;
 import dev.minerslab.showeverything.command.ShowFluidCommand;
 import dev.minerslab.showeverything.command.ShowItemCommand;
 import dev.minerslab.showeverything.network.NetworkHandler;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,7 +21,7 @@ import org.apache.logging.log4j.Logger;
         modid = ShowEverythingMod.MOD_ID,
         name = ShowEverythingMod.NAME,
         version = ShowEverythingMod.VERSION,
-        acceptedMinecraftVersions = "[1.12.2]",
+        acceptedMinecraftVersions = "[1.7.10]",
         acceptableRemoteVersions = "*"
 )
 public class ShowEverythingMod {
@@ -30,8 +34,13 @@ public class ShowEverythingMod {
     @EventHandler
     public void init(FMLInitializationEvent event) {
         NetworkHandler.register();
-        MinecraftForge.EVENT_BUS.register(new NetworkHandler.Events());
-        LOGGER.info("Initialized!");
+        FMLCommonHandler.instance().bus().register(new NetworkHandler.Events());
+        LOGGER.info("Initialized for Forge 1.7.10");
+    }
+
+    @NetworkCheckHandler
+    public boolean acceptRemoteVersions(Map<String, String> remoteVersions, Side remoteSide) {
+        return true;
     }
 
     @EventHandler

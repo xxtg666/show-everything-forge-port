@@ -6,40 +6,32 @@ import java.util.List;
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.world.IWorldNameable;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
-import javax.annotation.Nullable;
 
 public class ShowBlockCommand extends CommandBase {
     @Override
-    public String getName() {
+    public String getCommandName() {
         return "show-block";
     }
 
     @Override
-    public List<String> getAliases() {
+    public List getCommandAliases() {
         return Collections.singletonList("showblock");
     }
 
     @Override
-    public String getUsage(ICommandSender sender) {
+    public String getCommandUsage(ICommandSender sender) {
         return "/show-block [x y z]";
     }
 
@@ -49,58 +41,69 @@ public class ShowBlockCommand extends CommandBase {
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void processCommand(ICommandSender sender, String[] args) {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        BlockPos pos;
+        int x;
+        int y;
+        int z;
         if (args.length == 0) {
-            RayTraceResult hit = Raycasts.blocks(player, 15.0D, false, false);
-            pos = hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK ? hit.getBlockPos() : player.getPosition();
+            MovingObjectPosition hit = Raycasts.blocks(player, 15.0D, false, false);
+            if (hit != null && hit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+                x = hit.blockX;
+                y = hit.blockY;
+                z = hit.blockZ;
+            } else {
+                x = floor_double(player.posX);
+                y = floor_double(player.posY);
+                z = floor_double(player.posZ);
+            }
         } else if (args.length == 3) {
-            pos = parseBlockPos(sender, args, 0, false);
+            x = parseCoordinate(sender, args[0], floor_double(player.posX));
+            y = parseCoordinate(sender, args[1], floor_double(player.posY));
+            z = parseCoordinate(sender, args[2], floor_double(player.posZ));
         } else {
-            throw new WrongUsageException(getUsage(sender));
+            throw new WrongUsageException(getCommandUsage(sender));
         }
 
         World world = player.getEntityWorld();
-        if (!world.isBlockLoaded(pos)) {
-            throw new WrongUsageException("Block is not loaded: %s", pos.toString());
+        if (!world.blockExists(x, y, z)) {
+            throw new CommandException("Block is not loaded: %s %s %s", x, y, z);
         }
 
-        IBlockState state = world.getBlockState(pos);
-        Block block = state.getBlock();
+        Block block = world.getBlock(x, y, z);
+        int metadata = world.getBlockMetadata(x, y, z);
         Item item = Item.getItemFromBlock(block);
-        ItemStack stack = item == Items.AIR ? new ItemStack(Blocks.BARRIER) : new ItemStack(item, 1, block.damageDropped(state));
-        applyTileName(world, pos, stack);
+        ItemStack stack;
+        if (item == null) {
+            stack = new ItemStack(Items.paper);
+            stack.setStackDisplayName(block.getLocalizedName());
+        } else {
+            stack = new ItemStack(item, 1, block.damageDropped(metadata));
+        }
 
-        ITextComponent message = new TextComponentString("");
+        IChatComponent message = new ChatComponentText("");
         message.appendSibling(ChatComponents.item(stack));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(block)));
+        message.appendSibling(ChatComponents.labelValue("id", ChatComponents.registryName(block)));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.position(pos));
-        if (!ChatComponents.isSafeChatComponent(ChatComponents.chatLine(player, message))) {
-            message = new TextComponentString("");
-            message.appendSibling(ChatComponents.itemOmitted(stack, false));
-            message.appendText(" ");
-            message.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(block)));
-            message.appendText(" ");
-            message.appendSibling(ChatComponents.position(pos));
-        }
-        ChatComponents.broadcast(server, player, message);
+        message.appendSibling(ChatComponents.position(x, y, z));
+        ChatComponents.broadcast(player, message);
     }
 
     @Override
-    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
-        return args.length > 0 && args.length <= 3 ? getTabCompletionCoordinate(args, 0, targetPos) : Collections.emptyList();
+    public List addTabCompletionOptions(ICommandSender sender, String[] args) {
+        return null;
     }
 
-    private static void applyTileName(World world, BlockPos pos, ItemStack stack) {
-        TileEntity tile = world.getTileEntity(pos);
-        if (!(tile instanceof IWorldNameable) || !((IWorldNameable) tile).hasCustomName()) {
-            return;
-        }
-        NBTTagCompound display = stack.getOrCreateSubCompound("display");
-        ITextComponent name = ((IWorldNameable) tile).getDisplayName();
-        display.setString("Name", ITextComponent.Serializer.componentToJson(name));
+    private static int parseCoordinate(ICommandSender sender, String value, int origin) {
+        boolean relative = value.startsWith("~");
+        String number = relative ? value.substring(1) : value;
+        int parsed = number.length() == 0 ? 0 : parseInt(sender, number);
+        return relative ? origin + parsed : parsed;
+    }
+
+    private static int floor_double(double value) {
+        int integer = (int) value;
+        return value < integer ? integer - 1 : integer;
     }
 }

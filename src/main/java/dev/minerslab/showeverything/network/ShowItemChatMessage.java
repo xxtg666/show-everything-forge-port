@@ -1,13 +1,13 @@
 package dev.minerslab.showeverything.network;
 
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraft.util.IChatComponent;
 
 public class ShowItemChatMessage implements IMessage {
     private static final int CUSTOM_PAYLOAD_LIMIT = 1048576;
@@ -21,24 +21,26 @@ public class ShowItemChatMessage implements IMessage {
     public ShowItemChatMessage() {
     }
 
-    public ShowItemChatMessage(String senderName, String senderCommandName, ItemStack stack, ITextComponent messageSuffix) {
+    public ShowItemChatMessage(
+            String senderName, String senderCommandName, ItemStack stack, IChatComponent messageSuffix) {
         this.senderName = senderName;
         this.senderCommandName = senderCommandName;
         this.stack = stack.copy();
-        this.messageSuffix = ITextComponent.Serializer.componentToJson(messageSuffix);
+        this.messageSuffix = IChatComponent.Serializer.func_150696_a(messageSuffix);
     }
 
     @Override
     public void fromBytes(ByteBuf buf) {
         PacketBuffer packet = new PacketBuffer(buf);
-        senderName = packet.readString(64);
         try {
-            senderCommandName = packet.readString(64);
-            stack = packet.readItemStack();
-            messageSuffix = packet.readString(32767);
-        } catch (Exception e) {
-            senderCommandName = senderName;
-            stack = ItemStack.EMPTY;
+            senderName = packet.readStringFromBuffer(64);
+            senderCommandName = packet.readStringFromBuffer(64);
+            stack = packet.readItemStackFromBuffer();
+            messageSuffix = packet.readStringFromBuffer(32767);
+        } catch (Exception exception) {
+            senderName = "unknown";
+            senderCommandName = "unknown";
+            stack = null;
             messageSuffix = "{\"text\":\"\"}";
         }
     }
@@ -46,10 +48,14 @@ public class ShowItemChatMessage implements IMessage {
     @Override
     public void toBytes(ByteBuf buf) {
         PacketBuffer packet = new PacketBuffer(buf);
-        packet.writeString(senderName);
-        packet.writeString(senderCommandName);
-        packet.writeItemStack(stack);
-        packet.writeString(messageSuffix);
+        try {
+            packet.writeStringToBuffer(senderName);
+            packet.writeStringToBuffer(senderCommandName);
+            packet.writeItemStackToBuffer(stack);
+            packet.writeStringToBuffer(messageSuffix);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Unable to encode Show Everything item packet", exception);
+        }
     }
 
     public boolean isSafePayload() {
@@ -68,9 +74,10 @@ public class ShowItemChatMessage implements IMessage {
 
     public static class Handler implements IMessageHandler<ShowItemChatMessage, IMessage> {
         @Override
-        public IMessage onMessage(ShowItemChatMessage message, MessageContext ctx) {
+        public IMessage onMessage(ShowItemChatMessage message, MessageContext context) {
             try {
-                Class<?> bridge = Class.forName("dev.minerslab.showeverything.network.client.ClientMessageBridge");
+                Class<?> bridge = Class.forName(
+                        "dev.minerslab.showeverything.network.client.ClientMessageBridge");
                 bridge.getMethod("handleShowItemChat", ShowItemChatMessage.class).invoke(null, message);
             } catch (Exception ignored) {
             }

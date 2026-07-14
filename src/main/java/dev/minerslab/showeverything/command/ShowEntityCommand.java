@@ -2,38 +2,35 @@ package dev.minerslab.showeverything.command;
 
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
 
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.command.PlayerSelector;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
+import net.minecraft.util.MovingObjectPosition;
 
 public class ShowEntityCommand extends CommandBase {
     @Override
-    public String getName() {
+    public String getCommandName() {
         return "show-entity";
     }
 
     @Override
-    public List<String> getAliases() {
+    public List getCommandAliases() {
         return Collections.singletonList("showentity");
     }
 
     @Override
-    public String getUsage(ICommandSender sender) {
-        return "/show-entity [selector]";
+    public String getCommandUsage(ICommandSender sender) {
+        return "/show-entity [player]";
     }
 
     @Override
@@ -42,36 +39,47 @@ public class ShowEntityCommand extends CommandBase {
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void processCommand(ICommandSender sender, String[] args) {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
         Entity entity;
         if (args.length == 0) {
-            RayTraceResult hit = Raycasts.entity(player, 15.0D);
+            MovingObjectPosition hit = Raycasts.entity(player, 15.0D);
             entity = hit != null && hit.entityHit != null ? hit.entityHit : player;
         } else if (args.length == 1) {
-            entity = getEntity(server, sender, args[0]);
+            entity = getPlayerEntity(sender, args[0]);
         } else {
-            throw new WrongUsageException(getUsage(sender));
+            throw new WrongUsageException(getCommandUsage(sender));
         }
 
-        ITextComponent message = new TextComponentString("");
+        IChatComponent message = new ChatComponentText("");
         message.appendSibling(ChatComponents.entity(entity));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.labelValue("id ", entityId(entity)));
+        message.appendSibling(ChatComponents.labelValue("id", ChatComponents.entityId(entity)));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.labelValue("uuid ", entity.getUniqueID().toString()));
+        message.appendSibling(ChatComponents.labelValue("uuid", entity.getUniqueID().toString()));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.position(entity.getPosition()));
-        ChatComponents.broadcast(server, player, message);
+        message.appendSibling(ChatComponents.position(
+                floor_double(entity.posX), floor_double(entity.posY), floor_double(entity.posZ)));
+        ChatComponents.broadcast(player, message);
     }
 
     @Override
-    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
-        return args.length == 1 ? getListOfStringsMatchingLastWord(args, server.getOnlinePlayerNames()) : Collections.emptyList();
+    public List addTabCompletionOptions(ICommandSender sender, String[] args) {
+        return args.length == 1 ? getListOfStringsMatchingLastWord(args, MinecraftServer.getServer().getAllUsernames()) : null;
     }
 
-    private static String entityId(Entity entity) {
-        ResourceLocation id = EntityList.getKey(entity);
-        return id == null ? "unknown" : id.toString();
+    private static Entity getPlayerEntity(ICommandSender sender, String name) {
+        EntityPlayerMP player = PlayerSelector.hasArguments(name)
+                ? PlayerSelector.matchOnePlayer(sender, name)
+                : getPlayer(sender, name);
+        if (player == null) {
+            throw new CommandException("Player not found: %s", name);
+        }
+        return player;
+    }
+
+    private static int floor_double(double value) {
+        int integer = (int) value;
+        return value < integer ? integer - 1 : integer;
     }
 }

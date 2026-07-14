@@ -2,13 +2,11 @@ package dev.minerslab.showeverything.command;
 
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
 
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -16,32 +14,29 @@ import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidContainerRegistry;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.IFluidBlock;
 
 public class ShowFluidCommand extends CommandBase {
     @Override
-    public String getName() {
+    public String getCommandName() {
         return "show-fluid";
     }
 
     @Override
-    public List<String> getAliases() {
+    public List getCommandAliases() {
         return Collections.singletonList("showfluid");
     }
 
     @Override
-    public String getUsage(ICommandSender sender) {
+    public String getCommandUsage(ICommandSender sender) {
         return "/show-fluid [x y z]";
     }
 
@@ -51,51 +46,63 @@ public class ShowFluidCommand extends CommandBase {
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void processCommand(ICommandSender sender, String[] args) {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        BlockPos pos;
+        int x;
+        int y;
+        int z;
         if (args.length == 0) {
-            RayTraceResult hit = Raycasts.blocks(player, 15.0D, true, false);
-            pos = hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK ? hit.getBlockPos() : player.getPosition();
+            MovingObjectPosition hit = Raycasts.blocks(player, 15.0D, true, false);
+            if (hit != null && hit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+                x = hit.blockX;
+                y = hit.blockY;
+                z = hit.blockZ;
+            } else {
+                x = floor_double(player.posX);
+                y = floor_double(player.posY);
+                z = floor_double(player.posZ);
+            }
         } else if (args.length == 3) {
-            pos = parseBlockPos(sender, args, 0, false);
+            x = parseCoordinate(sender, args[0], floor_double(player.posX));
+            y = parseCoordinate(sender, args[1], floor_double(player.posY));
+            z = parseCoordinate(sender, args[2], floor_double(player.posZ));
         } else {
-            throw new WrongUsageException(getUsage(sender));
+            throw new WrongUsageException(getCommandUsage(sender));
         }
 
         World world = player.getEntityWorld();
-        if (!world.isBlockLoaded(pos)) {
-            throw new WrongUsageException("Block is not loaded: %s", pos.toString());
+        if (!world.blockExists(x, y, z)) {
+            throw new CommandException("Block is not loaded: %s %s %s", x, y, z);
+        }
+        Fluid fluid = fluidFromBlock(world.getBlock(x, y, z));
+        if (fluid == null) {
+            throw new CommandException("No fluid found at %s, %s, %s", x, y, z);
         }
 
-        IBlockState state = world.getBlockState(pos);
-        Fluid fluid = fluidFromBlock(state.getBlock());
-        if (fluid == null) {
-            throw new CommandException("No fluid found at %s, %s, %s", pos.getX(), pos.getY(), pos.getZ());
-        }
         ItemStack stack = bucketFor(fluid);
-        ITextComponent message = new TextComponentString("");
+        IChatComponent message = new ChatComponentText("");
         message.appendSibling(ChatComponents.item(stack));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.labelValue("id ", fluidId(fluid)));
+        message.appendSibling(ChatComponents.labelValue("id", fluidId(fluid)));
         message.appendText(" ");
-        message.appendSibling(ChatComponents.position(pos));
-        ChatComponents.broadcast(server, player, message);
+        message.appendSibling(ChatComponents.position(x, y, z));
+        ChatComponents.broadcast(player, message);
     }
 
     @Override
-    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
-        return args.length > 0 && args.length <= 3 ? getTabCompletionCoordinate(args, 0, targetPos) : Collections.emptyList();
+    public List addTabCompletionOptions(ICommandSender sender, String[] args) {
+        return null;
     }
 
     private static Fluid fluidFromBlock(Block block) {
         if (block instanceof IFluidBlock) {
             return ((IFluidBlock) block).getFluid();
         }
-        if (block.getDefaultState().getMaterial() == Material.WATER) {
+        Material material = block.getMaterial();
+        if (material == Material.water) {
             return FluidRegistry.WATER;
         }
-        if (block.getDefaultState().getMaterial() == Material.LAVA) {
+        if (material == Material.lava) {
             return FluidRegistry.LAVA;
         }
         return null;
@@ -103,18 +110,14 @@ public class ShowFluidCommand extends CommandBase {
 
     private static ItemStack bucketFor(Fluid fluid) {
         if (fluid == FluidRegistry.WATER) {
-            return new ItemStack(Items.WATER_BUCKET);
+            return new ItemStack(Items.water_bucket);
         }
         if (fluid == FluidRegistry.LAVA) {
-            return new ItemStack(Items.LAVA_BUCKET);
+            return new ItemStack(Items.lava_bucket);
         }
-        if (fluid != null) {
-            ItemStack stack = FluidUtil.getFilledBucket(new FluidStack(fluid, Fluid.BUCKET_VOLUME));
-            if (!stack.isEmpty()) {
-                return stack;
-            }
-        }
-        return new ItemStack(Items.BUCKET);
+        ItemStack filled = FluidContainerRegistry.fillFluidContainer(
+                new FluidStack(fluid, FluidContainerRegistry.BUCKET_VOLUME), new ItemStack(Items.bucket));
+        return filled == null ? new ItemStack(Items.bucket) : filled;
     }
 
     private static String fluidId(Fluid fluid) {
@@ -126,12 +129,24 @@ public class ShowFluidCommand extends CommandBase {
         }
         Block block = fluid.getBlock();
         if (block != null) {
-            ResourceLocation blockId = block.getRegistryName();
-            if (blockId != null) {
-                return blockId.toString();
+            String id = ChatComponents.registryName(block);
+            if (!"unknown".equals(id)) {
+                return id;
             }
         }
-        String name = FluidRegistry.getDefaultFluidName(fluid);
-        return name != null ? name : fluid.getName();
+        String name = FluidRegistry.getFluidName(fluid);
+        return name == null ? fluid.getName() : name;
+    }
+
+    private static int parseCoordinate(ICommandSender sender, String value, int origin) {
+        boolean relative = value.startsWith("~");
+        String number = relative ? value.substring(1) : value;
+        int parsed = number.length() == 0 ? 0 : parseInt(sender, number);
+        return relative ? origin + parsed : parsed;
+    }
+
+    private static int floor_double(double value) {
+        int integer = (int) value;
+        return value < integer ? integer - 1 : integer;
     }
 }

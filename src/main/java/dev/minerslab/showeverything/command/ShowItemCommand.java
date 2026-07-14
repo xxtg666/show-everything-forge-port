@@ -13,24 +13,24 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.event.HoverEvent;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.IChatComponent;
+import net.minecraft.event.HoverEvent;
 
 public class ShowItemCommand extends CommandBase {
     @Override
-    public String getName() {
+    public String getCommandName() {
         return "show-item";
     }
 
     @Override
-    public List<String> getAliases() {
+    public List getCommandAliases() {
         return Collections.singletonList("showitem");
     }
 
     @Override
-    public String getUsage(ICommandSender sender) {
+    public String getCommandUsage(ICommandSender sender) {
         return "/show-item";
     }
 
@@ -40,65 +40,65 @@ public class ShowItemCommand extends CommandBase {
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void processCommand(ICommandSender sender, String[] args) {
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        ItemStack stack = player.getHeldItemMainhand();
-        if (stack.isEmpty()) {
-            stack = player.getHeldItemOffhand();
-        }
-        if (stack.isEmpty()) {
+        ItemStack stack = player.getCurrentEquippedItem();
+        if (stack == null) {
             throw new CommandException("You are not holding an item.");
         }
 
-        ITextComponent suffix = new TextComponentString(" ");
-        suffix.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(stack.getItem())));
-        ITextComponent fullMessage = itemMessage(stack, suffix, false);
-        ITextComponent fullLine = ChatComponents.chatLine(player, fullMessage);
+        IChatComponent suffix = new ChatComponentText(" ");
+        suffix.appendSibling(ChatComponents.labelValue("id", ChatComponents.registryName(stack.getItem())));
+        IChatComponent fullMessage = itemMessage(stack, suffix, false);
+        IChatComponent fullLine = ChatComponents.chatLine(player, fullMessage);
+        MinecraftServer server = MinecraftServer.getServer();
         if (ChatComponents.isSafeChatComponent(fullLine)) {
-            server.getPlayerList().sendMessage(fullLine);
+            server.getConfigurationManager().sendChatMsg(fullLine);
             return;
         }
 
         List<String> vanillaFallbackPlayers = new ArrayList<String>();
         boolean oversizedClientPayload = false;
-        for (EntityPlayerMP target : server.getPlayerList().getPlayers()) {
-            boolean hasClientMod = NetworkHandler.hasClientMod(target);
-            if (hasClientMod) {
-                ShowItemChatMessage packet = new ShowItemChatMessage(player.getDisplayNameString(), player.getName(), stack, suffix);
+        for (Object object : server.getConfigurationManager().playerEntityList) {
+            EntityPlayerMP target = (EntityPlayerMP) object;
+            if (NetworkHandler.hasClientMod(target)) {
+                ShowItemChatMessage packet = new ShowItemChatMessage(
+                        player.getDisplayName(), player.getCommandSenderName(), stack, suffix);
                 if (packet.isSafePayload()) {
                     NetworkHandler.CHANNEL.sendTo(packet, target);
                 } else {
-                    target.sendMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
+                    target.addChatMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
                     oversizedClientPayload = true;
                 }
             } else {
-                target.sendMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
-                vanillaFallbackPlayers.add(target.getName());
+                target.addChatMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
+                vanillaFallbackPlayers.add(target.getCommandSenderName());
             }
         }
 
         if (!vanillaFallbackPlayers.isEmpty()) {
-            player.sendMessage(missingClientWarning(vanillaFallbackPlayers));
+            player.addChatMessage(missingClientWarning(vanillaFallbackPlayers));
         }
         if (oversizedClientPayload) {
-            player.sendMessage(new TextComponentString("This item is too large to send full NBT even to modded clients."));
+            player.addChatMessage(new ChatComponentText("This item is too large to send full NBT even to modded clients."));
         }
     }
 
-    private static ITextComponent itemMessage(ItemStack stack, ITextComponent suffix, boolean omitted) {
-        ITextComponent message = new TextComponentString("");
-        message.appendSibling(omitted ? ChatComponents.itemOmitted(stack, false) : ChatComponents.item(stack));
+    private static IChatComponent itemMessage(ItemStack stack, IChatComponent suffix, boolean omitted) {
+        IChatComponent message = new ChatComponentText("");
+        message.appendSibling(omitted ? ChatComponents.itemOmitted(stack) : ChatComponents.item(stack));
         message.appendSibling(suffix.createCopy());
         return message;
     }
 
-    private static ITextComponent missingClientWarning(List<String> players) {
-        ITextComponent message = new TextComponentString("Some players cannot see this item's full NBT ");
-        message.getStyle().setColor(TextFormatting.YELLOW);
-        ITextComponent info = new TextComponentString("[i]");
-        info.getStyle()
-                .setColor(TextFormatting.YELLOW)
-                .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(joinPlayerNames(players))));
+    private static IChatComponent missingClientWarning(List<String> players) {
+        IChatComponent message = new ChatComponentText("Some players cannot see this item's full NBT ");
+        message.getChatStyle().setColor(EnumChatFormatting.YELLOW);
+        IChatComponent info = new ChatComponentText("[i]");
+        info.getChatStyle()
+                .setColor(EnumChatFormatting.YELLOW)
+                .setChatHoverEvent(new HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT, new ChatComponentText(joinPlayerNames(players))));
         message.appendSibling(info);
         return message;
     }

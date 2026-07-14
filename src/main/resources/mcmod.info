@@ -5,10 +5,10 @@
   "description": "Show your items, blocks, fluids, and entities in chat.",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "url": "https://github.com/xxtg666/1.12.2-show-everything",
+  "url": "https://github.com/xxtg666/1.12.2-show-everything/tree/1.7.10",
   "updateUrl": "",
   "authorList": ["xxtg666", "WowStarWorld", "MinersLab"],
-  "credits": "Forge 1.12.2 port by xxtg666. Original mod by MinersLab/WowStarWorld",
+  "credits": "Forge 1.7.10 port by xxtg666. Original mod by MinersLab/WowStarWorld",
   "logoFile": "assets/showeverything/icon.png",
   "screenshots": [],
   "dependencies": []
