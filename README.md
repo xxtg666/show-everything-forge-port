@@ -1,55 +1,23 @@
-# Show Everything Forge 1.12.2
+# Show Everything Forge 1.20.1
 
-Forge 1.12.2 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
+Forge 1.20.1 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
 
-Show items, blocks, fluids, and entities in chat with hover details. The command logic runs on the server, and the mod declares remote clients as optional, so vanilla/Forge clients without this mod can still join.
-
-Clients that also install this mod get enhanced `/show-item` rendering for very large item NBT. Clients without the mod receive a safe shortened hover instead, so oversized NBT cannot kick players through Minecraft 1.12.2's chat packet string limit.
+The mod adds `/show-item`, `/show-block`, `/show-fluid`, and `/show-entity`, plus aliases without hyphens. Commands run on the server. Clients may join without the mod; clients that install it receive oversized item hover data through a Forge custom packet, while other clients receive a safe compact fallback.
 
 ## Requirements
 
-- Minecraft `1.12.2`
-- Forge `14.23.5.2847` or compatible 1.12.2 Forge build
-- Java 8 for typical Minecraft 1.12.2 servers
-
-## Installation
-
-1. Build or download `showeverything-forge-1.12.2-1.0.2.jar`.
-2. Put the jar in the server `mods` folder.
-3. Restart the server.
-
-Client installation is optional. The server will not reject clients just because they do not have this mod installed. Install it client-side only if you want full hover display for very large item NBT.
-
-## Commands
-
-All commands are available to normal players.
-
-| Command | Description |
-| --- | --- |
-| `/show-item` | Shows the item in your main hand, or offhand if the main hand is empty. |
-| `/show-block` | Shows the block you are looking at within 15 blocks. Falls back to your current position. |
-| `/show-block <x> <y> <z>` | Shows the block at a specific position. |
-| `/show-fluid` | Shows the fluid you are looking at within 15 blocks. Falls back to your current position. |
-| `/show-fluid <x> <y> <z>` | Shows the fluid/block at a specific position. |
-| `/show-entity` | Shows the entity you are looking at within 15 blocks. Falls back to yourself. |
-| `/show-entity <selector>` | Shows a selected entity. |
-
-Aliases without hyphens are also registered, such as `/showitem` and `/showblock`.
+- Minecraft `1.20.1`
+- Forge `47.4.10` or a compatible Forge 47 build
+- Java 17
 
 ## Build
 
 ```bash
-./gradlew build
+./gradlew clean build
 ```
 
-The compiled mod jar is written to:
-
-```text
-build/libs/showeverything-forge-1.12.2-1.0.2.jar
-```
-
-This `main` branch targets Forge 1.12.2 and uses ForgeGradle 2.3. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation. Other supported Minecraft versions live on their matching branches; each branch has its own ForgeGradle setup and CI workflow.
+The mod jar is written to `build/libs/showeverything-forge-1.20.1-1.0.2.jar`.
 
 ## License
 
-This port is maintained by xxtg666 and follows the repository license. The original mod is by MinersLab/WowStarWorld.
+This port is maintained by xxtg666 under the MIT license. The original mod is by MinersLab/WowStarWorld.

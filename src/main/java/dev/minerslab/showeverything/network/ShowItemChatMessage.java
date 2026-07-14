@@ -2,79 +2,54 @@ package dev.minerslab.showeverything.network;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import java.util.function.Supplier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkEvent;
 
-public class ShowItemChatMessage implements IMessage {
+public final class ShowItemChatMessage {
     private static final int CUSTOM_PAYLOAD_LIMIT = 1048576;
     private static final int CUSTOM_PAYLOAD_SAFETY_MARGIN = 8192;
 
-    public String senderName;
-    public String senderCommandName;
-    public String messageSuffix;
-    public ItemStack stack;
+    public final String senderName;
+    public final String senderCommandName;
+    public final ItemStack stack;
+    public final Component messageSuffix;
 
-    public ShowItemChatMessage() {
-    }
-
-    public ShowItemChatMessage(String senderName, String senderCommandName, ItemStack stack, ITextComponent messageSuffix) {
+    public ShowItemChatMessage(String senderName, String senderCommandName, ItemStack stack, Component messageSuffix) {
         this.senderName = senderName;
         this.senderCommandName = senderCommandName;
         this.stack = stack.copy();
-        this.messageSuffix = ITextComponent.Serializer.componentToJson(messageSuffix);
+        this.messageSuffix = messageSuffix.copy();
     }
 
-    @Override
-    public void fromBytes(ByteBuf buf) {
-        PacketBuffer packet = new PacketBuffer(buf);
-        senderName = packet.readString(64);
+    public static void encode(ShowItemChatMessage message, FriendlyByteBuf buffer) {
+        buffer.writeUtf(message.senderName, 64);
+        buffer.writeUtf(message.senderCommandName, 64);
+        buffer.writeItem(message.stack);
+        buffer.writeComponent(message.messageSuffix);
+    }
+
+    public static ShowItemChatMessage decode(FriendlyByteBuf buffer) {
+        return new ShowItemChatMessage(buffer.readUtf(64), buffer.readUtf(64), buffer.readItem(), buffer.readComponent());
+    }
+
+    public static void handle(ShowItemChatMessage message, Supplier<NetworkEvent.Context> context) {
         try {
-            senderCommandName = packet.readString(64);
-            stack = packet.readItemStack();
-            messageSuffix = packet.readString(32767);
-        } catch (Exception e) {
-            senderCommandName = senderName;
-            stack = ItemStack.EMPTY;
-            messageSuffix = "{\"text\":\"\"}";
+            Class<?> bridge = Class.forName("dev.minerslab.showeverything.network.client.ClientMessageBridge");
+            bridge.getMethod("handleShowItemChat", ShowItemChatMessage.class).invoke(null, message);
+        } catch (ReflectiveOperationException ignored) {
         }
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf) {
-        PacketBuffer packet = new PacketBuffer(buf);
-        packet.writeString(senderName);
-        packet.writeString(senderCommandName);
-        packet.writeItemStack(stack);
-        packet.writeString(messageSuffix);
     }
 
     public boolean isSafePayload() {
-        return payloadBytes() <= CUSTOM_PAYLOAD_LIMIT - CUSTOM_PAYLOAD_SAFETY_MARGIN;
-    }
-
-    public int payloadBytes() {
-        ByteBuf buffer = Unpooled.buffer();
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
         try {
-            toBytes(buffer);
-            return buffer.writerIndex();
+            encode(this, buffer);
+            return buffer.writerIndex() <= CUSTOM_PAYLOAD_LIMIT - CUSTOM_PAYLOAD_SAFETY_MARGIN;
         } finally {
             buffer.release();
-        }
-    }
-
-    public static class Handler implements IMessageHandler<ShowItemChatMessage, IMessage> {
-        @Override
-        public IMessage onMessage(ShowItemChatMessage message, MessageContext ctx) {
-            try {
-                Class<?> bridge = Class.forName("dev.minerslab.showeverything.network.client.ClientMessageBridge");
-                bridge.getMethod("handleShowItemChat", ShowItemChatMessage.class).invoke(null, message);
-            } catch (Exception ignored) {
-            }
-            return null;
         }
     }
 }
