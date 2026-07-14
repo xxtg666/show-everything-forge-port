@@ -1,55 +1,45 @@
-# Show Everything Forge 1.12.2
+# Show Everything Forge 1.18.2
 
-Forge 1.12.2 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
+Forge 1.18.2 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
 
-Show items, blocks, fluids, and entities in chat with hover details. The command logic runs on the server, and the mod declares remote clients as optional, so vanilla/Forge clients without this mod can still join.
+Show items, blocks, fluids, and entities in chat with hover details. Commands run on the server and are available to normal players. The client mod is optional: clients without it can join and receive a safe reduced item preview when an item's NBT is too large for vanilla chat.
 
-Clients that also install this mod get enhanced `/show-item` rendering for very large item NBT. Clients without the mod receive a safe shortened hover instead, so oversized NBT cannot kick players through Minecraft 1.12.2's chat packet string limit.
+When both sides have the mod, oversized `/show-item` data uses a bounded Forge custom packet to preserve the full item hover. Payloads that exceed the custom packet safety limit are reduced for every client instead of risking a disconnect.
 
 ## Requirements
 
-- Minecraft `1.12.2`
-- Forge `14.23.5.2847` or compatible 1.12.2 Forge build
-- Java 8 for typical Minecraft 1.12.2 servers
+- Minecraft `1.18.2`
+- Forge `40.2.21` or a compatible newer 1.18.2 Forge build
+- Java 17
 
 ## Installation
 
-1. Build or download `showeverything-forge-1.12.2-1.0.2.jar`.
-2. Put the jar in the server `mods` folder.
-3. Restart the server.
+1. Put `showeverything-forge-1.18.2-1.0.2.jar` in the server `mods` folder.
+2. Restart the server.
 
-Client installation is optional. The server will not reject clients just because they do not have this mod installed. Install it client-side only if you want full hover display for very large item NBT.
+Client installation is optional. Install the same mod version client-side only to see full hover data for items whose NBT is too large for vanilla chat.
 
 ## Commands
 
-All commands are available to normal players.
-
 | Command | Description |
 | --- | --- |
-| `/show-item` | Shows the item in your main hand, or offhand if the main hand is empty. |
-| `/show-block` | Shows the block you are looking at within 15 blocks. Falls back to your current position. |
-| `/show-block <x> <y> <z>` | Shows the block at a specific position. |
-| `/show-fluid` | Shows the fluid you are looking at within 15 blocks. Falls back to your current position. |
-| `/show-fluid <x> <y> <z>` | Shows the fluid/block at a specific position. |
-| `/show-entity` | Shows the entity you are looking at within 15 blocks. Falls back to yourself. |
-| `/show-entity <selector>` | Shows a selected entity. |
+| `/show-item` | Shows the item in the main hand, or the offhand when the main hand is empty. |
+| `/show-block [x y z]` | Shows the looked-at block, or a block at the optional position. |
+| `/show-fluid [x y z]` | Shows the looked-at fluid, or a fluid at the optional position. |
+| `/show-entity [selector]` | Shows the looked-at entity, or the selected entity. |
 
-Aliases without hyphens are also registered, such as `/showitem` and `/showblock`.
+Aliases without hyphens are also registered: `/showitem`, `/showblock`, `/showfluid`, and `/showentity`.
 
 ## Build
 
+Use the official Forge `1.18.2-40.2.21` MDK wrapper and Java 17:
+
 ```bash
-./gradlew build
+./gradlew clean build
 ```
 
-The compiled mod jar is written to:
-
-```text
-build/libs/showeverything-forge-1.12.2-1.0.2.jar
-```
-
-This `main` branch targets Forge 1.12.2 and uses ForgeGradle 2.3. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation. Other supported Minecraft versions live on their matching branches; each branch has its own ForgeGradle setup and CI workflow.
+The compiled mod is written to `build/libs/showeverything-forge-1.18.2-1.0.2.jar`.
 
 ## License
 
-This port is maintained by xxtg666 and follows the repository license. The original mod is by MinersLab/WowStarWorld.
+This port is maintained by xxtg666 under the repository's MIT license. The original mod is by MinersLab/WowStarWorld.

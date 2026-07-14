@@ -1,0 +1,31 @@
+modLoader="javafml"
+loaderVersion="[40,)"
+license="MIT"
+
+[[mods]]
+modId="showeverything"
+version="${file.jarVersion}"
+displayName="Show Everything"
+displayURL="https://github.com/xxtg666/show-everything-forge-port"
+logoFile="assets/showeverything/icon.png"
+credits="Forge port by xxtg666. Original mod by MinersLab/WowStarWorld."
+authors="xxtg666, WowStarWorld, MinersLab"
+displayTest="IGNORE_SERVER_VERSION"
+description='''
+Show items, blocks, fluids, and entities in chat with hover details.
+The client installation is optional; servers remain compatible with clients without the mod.
+'''
+
+[[dependencies.showeverything]]
+modId="forge"
+mandatory=true
+versionRange="[40.2.21,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.showeverything]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.18.2,1.19)"
+ordering="NONE"
+side="BOTH"

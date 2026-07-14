@@ -1,55 +1,60 @@
 package dev.minerslab.showeverything.util;
 
-import java.util.List;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
+import java.util.Optional;
 
 public final class Raycasts {
     private Raycasts() {
     }
 
-    public static RayTraceResult blocks(EntityPlayerMP player, double distance, boolean stopOnLiquid, boolean ignoreBlockWithoutBoundingBox) {
-        Vec3d eyes = player.getPositionEyes(1.0F);
-        Vec3d look = player.getLook(1.0F);
-        Vec3d end = eyes.add(look.x * distance, look.y * distance, look.z * distance);
-        return player.world.rayTraceBlocks(eyes, end, stopOnLiquid, ignoreBlockWithoutBoundingBox, false);
+    public static BlockHitResult blocks(ServerPlayer player, double distance, boolean includeFluids) {
+        Vec3 eyes = player.getEyePosition(1.0F);
+        Vec3 end = eyes.add(player.getViewVector(1.0F).scale(distance));
+        return player.level.clip(new ClipContext(
+                eyes,
+                end,
+                ClipContext.Block.OUTLINE,
+                includeFluids ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE,
+                player
+        ));
     }
 
-    public static RayTraceResult entity(EntityPlayerMP player, double distance) {
-        Vec3d eyes = player.getPositionEyes(1.0F);
-        Vec3d look = player.getLook(1.0F);
-        Vec3d end = eyes.add(look.x * distance, look.y * distance, look.z * distance);
-        RayTraceResult blockHit = player.world.rayTraceBlocks(eyes, end, false, true, false);
-        if (blockHit != null) {
-            end = blockHit.hitVec;
-            distance = Math.sqrt(eyes.squareDistanceTo(end));
+    public static Entity entity(ServerPlayer player, double distance) {
+        Vec3 eyes = player.getEyePosition(1.0F);
+        Vec3 look = player.getViewVector(1.0F);
+        Vec3 end = eyes.add(look.scale(distance));
+        BlockHitResult blockHit = blocks(player, distance, false);
+        if (blockHit.getType() == HitResult.Type.BLOCK) {
+            end = blockHit.getLocation();
+            distance = eyes.distanceTo(end);
         }
+
         Entity closest = null;
-        Vec3d closestHit = null;
         double closestDistance = distance * distance;
-
-        List<Entity> entities = player.world.getEntitiesWithinAABBExcludingEntity(player, player.getEntityBoundingBox().expand(look.x * distance, look.y * distance, look.z * distance).grow(1.0D));
-        for (Entity entity : entities) {
-            if (!entity.canBeCollidedWith()) {
-                continue;
-            }
-            AxisAlignedBB box = entity.getEntityBoundingBox().grow(entity.getCollisionBorderSize());
-            RayTraceResult hit = box.calculateIntercept(eyes, end);
-            if (hit == null) {
-                continue;
-            }
-            double hitDistance = eyes.squareDistanceTo(hit.hitVec);
-            if (hitDistance < closestDistance) {
-                closest = entity;
-                closestHit = hit.hitVec;
-                closestDistance = hitDistance;
+        AABB search = player.getBoundingBox().expandTowards(look.scale(distance)).inflate(1.0D);
+        for (Entity candidate : player.level.getEntities(player, search, Entity::isPickable)) {
+            AABB box = candidate.getBoundingBox().inflate(candidate.getPickRadius());
+            Optional<Vec3> intersection = box.clip(eyes, end);
+            if (box.contains(eyes)) {
+                if (closestDistance >= 0.0D) {
+                    closest = candidate;
+                    closestDistance = 0.0D;
+                }
+            } else if (intersection.isPresent()) {
+                double hitDistance = eyes.distanceToSqr(intersection.get());
+                if (hitDistance < closestDistance) {
+                    closest = candidate;
+                    closestDistance = hitDistance;
+                }
             }
         }
-
-        return closest == null ? null : new RayTraceResult(closest, closestHit);
+        return closest;
     }
 }

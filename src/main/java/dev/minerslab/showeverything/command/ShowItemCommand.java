@@ -1,116 +1,104 @@
 package dev.minerslab.showeverything.command;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.minerslab.showeverything.network.NetworkHandler;
 import dev.minerslab.showeverything.network.ShowItemChatMessage;
 import dev.minerslab.showeverything.util.ChatComponents;
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.event.HoverEvent;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
-public class ShowItemCommand extends CommandBase {
-    @Override
-    public String getName() {
-        return "show-item";
+import java.util.ArrayList;
+import java.util.List;
+
+public final class ShowItemCommand {
+    private ShowItemCommand() {
     }
 
-    @Override
-    public List<String> getAliases() {
-        return Collections.singletonList("showitem");
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("show-item")
+                .requires(source -> source.getEntity() instanceof ServerPlayer)
+                .executes(context -> execute(context.getSource()));
+        LiteralCommandNode<CommandSourceStack> node = dispatcher.register(command);
+        dispatcher.register(Commands.literal("showitem").redirect(node));
     }
 
-    @Override
-    public String getUsage(ICommandSender sender) {
-        return "/show-item";
-    }
-
-    @Override
-    public int getRequiredPermissionLevel() {
-        return 0;
-    }
-
-    @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-        EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        ItemStack stack = player.getHeldItemMainhand();
+    private static int execute(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer sender = source.getPlayerOrException();
+        ItemStack stack = sender.getMainHandItem();
         if (stack.isEmpty()) {
-            stack = player.getHeldItemOffhand();
+            stack = sender.getOffhandItem();
         }
         if (stack.isEmpty()) {
-            throw new CommandException("You are not holding an item.");
+            throw new com.mojang.brigadier.exceptions.SimpleCommandExceptionType(
+                    new TextComponent("You are not holding an item.")
+            ).create();
         }
 
-        ITextComponent suffix = new TextComponentString(" ");
-        suffix.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(stack.getItem())));
-        ITextComponent fullMessage = itemMessage(stack, suffix, false);
-        ITextComponent fullLine = ChatComponents.chatLine(player, fullMessage);
+        MutableComponent suffix = new TextComponent(" ")
+                .append(ChatComponents.labelValue("id", ChatComponents.registryName(stack.getItem())));
+        MutableComponent fullMessage = itemMessage(stack, suffix, false);
+        MutableComponent fullLine = ChatComponents.chatLine(sender, fullMessage);
         if (ChatComponents.isSafeChatComponent(fullLine)) {
-            server.getPlayerList().sendMessage(fullLine);
-            return;
+            for (ServerPlayer target : source.getServer().getPlayerList().getPlayers()) {
+                target.sendMessage(fullLine, sender.getUUID());
+            }
+            return 1;
         }
 
-        List<String> vanillaFallbackPlayers = new ArrayList<String>();
-        boolean oversizedClientPayload = false;
-        for (EntityPlayerMP target : server.getPlayerList().getPlayers()) {
-            boolean hasClientMod = NetworkHandler.hasClientMod(target);
-            if (hasClientMod) {
-                ShowItemChatMessage packet = new ShowItemChatMessage(player.getDisplayNameString(), player.getName(), stack, suffix);
-                if (packet.isSafePayload()) {
-                    NetworkHandler.CHANNEL.sendTo(packet, target);
-                } else {
-                    target.sendMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
-                    oversizedClientPayload = true;
-                }
+        List<String> missingClientMod = new ArrayList<>();
+        boolean oversizedCustomPayload = false;
+        ShowItemChatMessage packet = new ShowItemChatMessage(
+                sender.getDisplayName().getString(),
+                sender.getGameProfile().getName(),
+                stack,
+                suffix
+        );
+        for (ServerPlayer target : source.getServer().getPlayerList().getPlayers()) {
+            if (NetworkHandler.canSendTo(target) && packet.isSafePayload()) {
+                NetworkHandler.send(target, packet);
             } else {
-                target.sendMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
-                vanillaFallbackPlayers.add(target.getName());
+                target.sendMessage(ChatComponents.chatLine(sender, itemMessage(stack, suffix, true)), sender.getUUID());
+                if (!NetworkHandler.canSendTo(target)) {
+                    missingClientMod.add(target.getGameProfile().getName());
+                } else {
+                    oversizedCustomPayload = true;
+                }
             }
         }
 
-        if (!vanillaFallbackPlayers.isEmpty()) {
-            player.sendMessage(missingClientWarning(vanillaFallbackPlayers));
+        if (!missingClientMod.isEmpty()) {
+            sender.sendMessage(missingClientWarning(missingClientMod), sender.getUUID());
         }
-        if (oversizedClientPayload) {
-            player.sendMessage(new TextComponentString("This item is too large to send full NBT even to modded clients."));
+        if (oversizedCustomPayload) {
+            sender.sendMessage(
+                    new TextComponent("This item is too large to send safely, even to modded clients.")
+                            .withStyle(ChatFormatting.YELLOW),
+                    sender.getUUID()
+            );
         }
+        return 1;
     }
 
-    private static ITextComponent itemMessage(ItemStack stack, ITextComponent suffix, boolean omitted) {
-        ITextComponent message = new TextComponentString("");
-        message.appendSibling(omitted ? ChatComponents.itemOmitted(stack, false) : ChatComponents.item(stack));
-        message.appendSibling(suffix.createCopy());
-        return message;
+    private static MutableComponent itemMessage(ItemStack stack, Component suffix, boolean omitted) {
+        return (omitted ? ChatComponents.itemOmitted(stack) : ChatComponents.item(stack)).append(suffix.copy());
     }
 
-    private static ITextComponent missingClientWarning(List<String> players) {
-        ITextComponent message = new TextComponentString("Some players cannot see this item's full NBT ");
-        message.getStyle().setColor(TextFormatting.YELLOW);
-        ITextComponent info = new TextComponentString("[i]");
-        info.getStyle()
-                .setColor(TextFormatting.YELLOW)
-                .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(joinPlayerNames(players))));
-        message.appendSibling(info);
-        return message;
-    }
-
-    private static String joinPlayerNames(List<String> players) {
-        StringBuilder builder = new StringBuilder("Missing client mod:\n");
-        for (int i = 0; i < players.size(); i++) {
-            if (i > 0) {
-                builder.append('\n');
-            }
-            builder.append(players.get(i));
-        }
-        return builder.toString();
+    private static MutableComponent missingClientWarning(List<String> players) {
+        String names = "Missing client mod:\n" + String.join("\n", players);
+        MutableComponent info = new TextComponent("[i]").withStyle(style -> style
+                .withColor(ChatFormatting.YELLOW)
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent(names))));
+        return new TextComponent("Some players cannot see this item's full NBT ")
+                .withStyle(ChatFormatting.YELLOW)
+                .append(info);
     }
 }
