@@ -14,7 +14,7 @@ Clients that also install this mod get enhanced `/show-item` rendering for very 
 
 ## Installation
 
-1. Build or download `showeverything-1.0.2.jar`.
+1. Build or download `showeverything-forge-1.12.2-1.0.2.jar`.
 2. Put the jar in the server `mods` folder.
 3. Restart the server.
 
@@ -45,10 +45,10 @@ Aliases without hyphens are also registered, such as `/showitem` and `/showblock
 The compiled mod jar is written to:
 
 ```text
-build/libs/showeverything-1.0.2.jar
+build/libs/showeverything-forge-1.12.2-1.0.2.jar
 ```
 
-This repository uses ForgeGradle 2.3 and a Gradle 4.10.3 wrapper so CI can start on modern JDKs. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation.
+This `main` branch targets Forge 1.12.2 and uses ForgeGradle 2.3. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation. Other supported Minecraft versions live on their matching branches; each branch has its own ForgeGradle setup and CI workflow.
 
 ## License
 

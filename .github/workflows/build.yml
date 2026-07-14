@@ -28,5 +28,5 @@ jobs:
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:
-          name: showeverything-1.12.2
-          path: build/libs/showeverything-*.jar
+          name: showeverything-forge-1.12.2
+          path: build/libs/showeverything-forge-1.12.2-*.jar
