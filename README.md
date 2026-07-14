@@ -48,7 +48,7 @@ The compiled mod jar is written to:
 build/libs/showeverything-forge-1.12.2-1.0.2.jar
 ```
 
-This `main` branch targets Forge 1.12.2 and uses ForgeGradle 2.3. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation. Other supported Minecraft versions live on their matching branches; each branch has its own ForgeGradle setup and CI workflow.
+This `1.12.2` branch targets Forge 1.12.2 and uses ForgeGradle 2.3. Forge 1.12.2 runtime usage should still follow the usual Java 8 expectation. Other supported Minecraft versions live on their matching branches; each branch has its own ForgeGradle setup and CI workflow.
 
 ## License
 
