@@ -1,106 +1,94 @@
 package dev.minerslab.showeverything.command;
 
-import java.util.Collections;
-import java.util.List;
-
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
-import net.minecraft.item.Item;
+import net.minecraft.block.BlockState;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
+import net.minecraft.command.arguments.BlockPosArgument;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.world.IWorldNameable;
+import net.minecraft.util.INameable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.World;
-import javax.annotation.Nullable;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.server.ServerWorld;
 
-public class ShowBlockCommand extends CommandBase {
-    @Override
-    public String getName() {
-        return "show-block";
+public final class ShowBlockCommand {
+    private static final SimpleCommandExceptionType NOT_LOADED = new SimpleCommandExceptionType(
+            new StringTextComponent("That block is not loaded."));
+
+    private ShowBlockCommand() {
     }
 
-    @Override
-    public List<String> getAliases() {
-        return Collections.singletonList("showblock");
+    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+        com.mojang.brigadier.tree.LiteralCommandNode<CommandSource> command = dispatcher.register(
+                Commands.literal("show-block")
+                        .executes(context -> execute(context.getSource(), null))
+                        .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                                .executes(context -> execute(context.getSource(),
+                                        BlockPosArgument.getLoadedBlockPos(context, "pos")))));
+        dispatcher.register(Commands.literal("showblock").redirect(command));
     }
 
-    @Override
-    public String getUsage(ICommandSender sender) {
-        return "/show-block [x y z]";
-    }
-
-    @Override
-    public int getRequiredPermissionLevel() {
-        return 0;
-    }
-
-    @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-        EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        BlockPos pos;
-        if (args.length == 0) {
-            RayTraceResult hit = Raycasts.blocks(player, 15.0D, false, false);
-            pos = hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK ? hit.getBlockPos() : player.getPosition();
-        } else if (args.length == 3) {
-            pos = parseBlockPos(sender, args, 0, false);
-        } else {
-            throw new WrongUsageException(getUsage(sender));
+    private static int execute(CommandSource source, BlockPos requestedPos) throws CommandSyntaxException {
+        ServerPlayerEntity player = source.getPlayerOrException();
+        BlockPos pos = requestedPos;
+        if (pos == null) {
+            RayTraceResult hit = Raycasts.blocks(player, 15.0D, false);
+            pos = hit.getType() == RayTraceResult.Type.BLOCK
+                    ? ((BlockRayTraceResult) hit).getBlockPos()
+                    : player.blockPosition();
         }
 
-        World world = player.getEntityWorld();
-        if (!world.isBlockLoaded(pos)) {
-            throw new WrongUsageException("Block is not loaded: %s", pos.toString());
+        ServerWorld world = player.getLevel();
+        if (!world.isLoaded(pos)) {
+            throw NOT_LOADED.create();
         }
 
-        IBlockState state = world.getBlockState(pos);
+        BlockState state = world.getBlockState(pos);
         Block block = state.getBlock();
-        Item item = Item.getItemFromBlock(block);
-        ItemStack stack = item == Items.AIR ? new ItemStack(Blocks.BARRIER) : new ItemStack(item, 1, block.damageDropped(state));
+        ItemStack stack = block.getCloneItemStack(world, pos, state);
+        if (stack.isEmpty()) {
+            stack = new ItemStack(Items.BARRIER);
+        }
         applyTileName(world, pos, stack);
 
-        ITextComponent message = new TextComponentString("");
-        message.appendSibling(ChatComponents.item(stack));
-        message.appendText(" ");
-        message.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(block)));
-        message.appendText(" ");
-        message.appendSibling(ChatComponents.position(pos));
+        IFormattableTextComponent message = new StringTextComponent("")
+                .append(ChatComponents.item(stack))
+                .append(" ")
+                .append(ChatComponents.labelValue("id", ChatComponents.registryName(block)))
+                .append(" ")
+                .append(ChatComponents.position(pos));
         if (!ChatComponents.isSafeChatComponent(ChatComponents.chatLine(player, message))) {
-            message = new TextComponentString("");
-            message.appendSibling(ChatComponents.itemOmitted(stack, false));
-            message.appendText(" ");
-            message.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(block)));
-            message.appendText(" ");
-            message.appendSibling(ChatComponents.position(pos));
+            message = new StringTextComponent("")
+                    .append(ChatComponents.itemOmitted(stack))
+                    .append(" ")
+                    .append(ChatComponents.labelValue("id", ChatComponents.registryName(block)))
+                    .append(" ")
+                    .append(ChatComponents.position(pos));
         }
-        ChatComponents.broadcast(server, player, message);
+        ChatComponents.broadcast(player.getServer(), player, message);
+        return 1;
     }
 
-    @Override
-    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
-        return args.length > 0 && args.length <= 3 ? getTabCompletionCoordinate(args, 0, targetPos) : Collections.emptyList();
-    }
-
-    private static void applyTileName(World world, BlockPos pos, ItemStack stack) {
-        TileEntity tile = world.getTileEntity(pos);
-        if (!(tile instanceof IWorldNameable) || !((IWorldNameable) tile).hasCustomName()) {
+    private static void applyTileName(ServerWorld world, BlockPos pos, ItemStack stack) {
+        TileEntity tile = world.getBlockEntity(pos);
+        if (!(tile instanceof INameable) || !((INameable) tile).hasCustomName()) {
             return;
         }
-        NBTTagCompound display = stack.getOrCreateSubCompound("display");
-        ITextComponent name = ((IWorldNameable) tile).getDisplayName();
-        display.setString("Name", ITextComponent.Serializer.componentToJson(name));
+        CompoundNBT display = stack.getOrCreateTagElement("display");
+        ITextComponent name = ((INameable) tile).getDisplayName();
+        display.putString("Name", ITextComponent.Serializer.toJson(name));
     }
 }

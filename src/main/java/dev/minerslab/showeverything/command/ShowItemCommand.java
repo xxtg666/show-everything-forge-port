@@ -1,116 +1,101 @@
 package dev.minerslab.showeverything.command;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import dev.minerslab.showeverything.network.NetworkHandler;
 import dev.minerslab.showeverything.network.ShowItemChatMessage;
 import dev.minerslab.showeverything.util.ChatComponents;
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.event.HoverEvent;
 
-public class ShowItemCommand extends CommandBase {
-    @Override
-    public String getName() {
-        return "show-item";
+import java.util.ArrayList;
+import java.util.List;
+
+public final class ShowItemCommand {
+    private static final SimpleCommandExceptionType EMPTY_HAND = new SimpleCommandExceptionType(
+            new StringTextComponent("You are not holding an item."));
+
+    private ShowItemCommand() {
     }
 
-    @Override
-    public List<String> getAliases() {
-        return Collections.singletonList("showitem");
+    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+        com.mojang.brigadier.tree.LiteralCommandNode<CommandSource> command = dispatcher.register(
+                Commands.literal("show-item").executes(context -> execute(context.getSource())));
+        dispatcher.register(Commands.literal("showitem").redirect(command));
     }
 
-    @Override
-    public String getUsage(ICommandSender sender) {
-        return "/show-item";
-    }
-
-    @Override
-    public int getRequiredPermissionLevel() {
-        return 0;
-    }
-
-    @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-        EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        ItemStack stack = player.getHeldItemMainhand();
+    private static int execute(CommandSource source) throws CommandSyntaxException {
+        ServerPlayerEntity player = source.getPlayerOrException();
+        ItemStack stack = player.getMainHandItem();
         if (stack.isEmpty()) {
-            stack = player.getHeldItemOffhand();
+            stack = player.getOffhandItem();
         }
         if (stack.isEmpty()) {
-            throw new CommandException("You are not holding an item.");
+            throw EMPTY_HAND.create();
         }
 
-        ITextComponent suffix = new TextComponentString(" ");
-        suffix.appendSibling(ChatComponents.labelValue("id ", ChatComponents.registryName(stack.getItem())));
+        IFormattableTextComponent suffix = new StringTextComponent(" ")
+                .append(ChatComponents.labelValue("id", ChatComponents.registryName(stack.getItem())));
         ITextComponent fullMessage = itemMessage(stack, suffix, false);
         ITextComponent fullLine = ChatComponents.chatLine(player, fullMessage);
         if (ChatComponents.isSafeChatComponent(fullLine)) {
-            server.getPlayerList().sendMessage(fullLine);
-            return;
+            ChatComponents.broadcastLine(player.getServer(), player, fullLine);
+            return 1;
         }
 
-        List<String> vanillaFallbackPlayers = new ArrayList<String>();
+        List<String> vanillaFallbackPlayers = new ArrayList<>();
         boolean oversizedClientPayload = false;
-        for (EntityPlayerMP target : server.getPlayerList().getPlayers()) {
-            boolean hasClientMod = NetworkHandler.hasClientMod(target);
-            if (hasClientMod) {
-                ShowItemChatMessage packet = new ShowItemChatMessage(player.getDisplayNameString(), player.getName(), stack, suffix);
-                if (packet.isSafePayload()) {
-                    NetworkHandler.CHANNEL.sendTo(packet, target);
-                } else {
-                    target.sendMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
-                    oversizedClientPayload = true;
-                }
+        ShowItemChatMessage packet = new ShowItemChatMessage(
+                player.getDisplayName(), player.getGameProfile().getName(), stack, suffix);
+
+        for (ServerPlayerEntity target : player.getServer().getPlayerList().getPlayers()) {
+            if (NetworkHandler.hasClientMod(target) && packet.isSafePayload()) {
+                NetworkHandler.sendTo(packet, target);
             } else {
-                target.sendMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)));
-                vanillaFallbackPlayers.add(target.getName());
+                target.sendMessage(ChatComponents.chatLine(player, itemMessage(stack, suffix, true)), player.getUUID());
+                if (NetworkHandler.hasClientMod(target)) {
+                    oversizedClientPayload = true;
+                } else {
+                    vanillaFallbackPlayers.add(target.getGameProfile().getName());
+                }
             }
         }
 
         if (!vanillaFallbackPlayers.isEmpty()) {
-            player.sendMessage(missingClientWarning(vanillaFallbackPlayers));
+            player.sendMessage(missingClientWarning(vanillaFallbackPlayers), player.getUUID());
         }
         if (oversizedClientPayload) {
-            player.sendMessage(new TextComponentString("This item is too large to send full NBT even to modded clients."));
+            player.sendMessage(new StringTextComponent(
+                    "This item is too large to send full NBT even to modded clients."), player.getUUID());
         }
+        return 1;
     }
 
     private static ITextComponent itemMessage(ItemStack stack, ITextComponent suffix, boolean omitted) {
-        ITextComponent message = new TextComponentString("");
-        message.appendSibling(omitted ? ChatComponents.itemOmitted(stack, false) : ChatComponents.item(stack));
-        message.appendSibling(suffix.createCopy());
-        return message;
+        return new StringTextComponent("")
+                .append(omitted ? ChatComponents.itemOmitted(stack) : ChatComponents.item(stack))
+                .append(suffix.copy());
     }
 
     private static ITextComponent missingClientWarning(List<String> players) {
-        ITextComponent message = new TextComponentString("Some players cannot see this item's full NBT ");
-        message.getStyle().setColor(TextFormatting.YELLOW);
-        ITextComponent info = new TextComponentString("[i]");
-        info.getStyle()
-                .setColor(TextFormatting.YELLOW)
-                .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(joinPlayerNames(players))));
-        message.appendSibling(info);
-        return message;
+        IFormattableTextComponent message = new StringTextComponent(
+                "Some players cannot see this item's full NBT ").withStyle(TextFormatting.YELLOW);
+        IFormattableTextComponent info = new StringTextComponent("[i]").withStyle(style -> style
+                .withColor(TextFormatting.YELLOW)
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        new StringTextComponent(joinPlayerNames(players)))));
+        return message.append(info);
     }
 
     private static String joinPlayerNames(List<String> players) {
-        StringBuilder builder = new StringBuilder("Missing client mod:\n");
-        for (int i = 0; i < players.size(); i++) {
-            if (i > 0) {
-                builder.append('\n');
-            }
-            builder.append(players.get(i));
-        }
-        return builder.toString();
+        return "Missing client mod:\n" + String.join("\n", players);
     }
 }

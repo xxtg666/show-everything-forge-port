@@ -1,73 +1,43 @@
 package dev.minerslab.showeverything.network;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import dev.minerslab.showeverything.ShowEverythingMod;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
-import net.minecraftforge.fml.common.network.handshake.NetworkDispatcher;
-import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 public final class NetworkHandler {
-    public static final SimpleNetworkWrapper CHANNEL = NetworkRegistry.INSTANCE.newSimpleChannel(ShowEverythingMod.MOD_ID);
-    private static final Map<UUID, Boolean> CLIENT_MODS = new HashMap<UUID, Boolean>();
+    private static final String PROTOCOL = "1.16.5-1";
+
+    public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
+            .named(new ResourceLocation(ShowEverythingMod.MOD_ID, "main"))
+            .networkProtocolVersion(() -> PROTOCOL)
+            .clientAcceptedVersions(NetworkHandler::acceptVersion)
+            .serverAcceptedVersions(NetworkHandler::acceptVersion)
+            .simpleChannel();
 
     private NetworkHandler() {
     }
 
     public static void register() {
-        CHANNEL.registerMessage(ShowItemChatMessage.Handler.class, ShowItemChatMessage.class, 0, Side.CLIENT);
+        CHANNEL.registerMessage(0, ShowItemChatMessage.class,
+                ShowItemChatMessage::encode,
+                ShowItemChatMessage::decode,
+                ShowItemChatMessage::handle);
     }
 
-    public static boolean hasClientMod(EntityPlayerMP player) {
-        Boolean cached = CLIENT_MODS.get(player.getUniqueID());
-        if (cached != null) {
-            return cached;
-        }
-        boolean detected = detectClientMod(player);
-        CLIENT_MODS.put(player.getUniqueID(), detected);
-        return detected;
+    public static boolean hasClientMod(ServerPlayerEntity player) {
+        return CHANNEL.isRemotePresent(player.connection.connection);
     }
 
-    private static boolean detectClientMod(EntityPlayerMP player) {
-        NetworkDispatcher dispatcher = NetworkDispatcher.get(player.connection.netManager);
-        if (dispatcher == null) {
-            return false;
-        }
-        String version = dispatcher.getModList().get(ShowEverythingMod.MOD_ID);
-        return ShowEverythingMod.VERSION.equals(version);
+    public static void sendTo(ShowItemChatMessage message, ServerPlayerEntity player) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), message);
     }
 
-    public static void cacheClientMod(EntityPlayerMP player) {
-        boolean hasClientMod = detectClientMod(player);
-        CLIENT_MODS.put(player.getUniqueID(), hasClientMod);
-        ShowEverythingMod.LOGGER.info("show-everything client: player={} installed={}", player.getName(), hasClientMod);
-    }
-
-    public static void clearClientMod(EntityPlayerMP player) {
-        CLIENT_MODS.remove(player.getUniqueID());
-    }
-
-    public static class Events {
-        @SubscribeEvent
-        public void onLogin(FMLNetworkEvent.ServerConnectionFromClientEvent event) {
-            if (event.getHandler() instanceof net.minecraft.network.NetHandlerPlayServer) {
-                EntityPlayerMP player = ((net.minecraft.network.NetHandlerPlayServer) event.getHandler()).player;
-                cacheClientMod(player);
-            }
-        }
-
-        @SubscribeEvent
-        public void onDisconnect(FMLNetworkEvent.ServerDisconnectionFromClientEvent event) {
-            if (event.getHandler() instanceof net.minecraft.network.NetHandlerPlayServer) {
-                EntityPlayerMP player = ((net.minecraft.network.NetHandlerPlayServer) event.getHandler()).player;
-                clearClientMod(player);
-            }
-        }
+    private static boolean acceptVersion(String remoteVersion) {
+        return PROTOCOL.equals(remoteVersion)
+                || NetworkRegistry.ABSENT.equals(remoteVersion)
+                || NetworkRegistry.ACCEPTVANILLA.equals(remoteVersion);
     }
 }
