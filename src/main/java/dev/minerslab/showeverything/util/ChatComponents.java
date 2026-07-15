@@ -28,7 +28,7 @@ public final class ChatComponents {
         if (stack.getCount() > 1) {
             component.append(stack.getCount() + " * ");
         }
-        return component.append(stack.getDisplayName());
+        return component.append(itemName(stack));
     }
 
     public static ITextComponent itemOmitted(ItemStack stack) {
@@ -38,7 +38,7 @@ public final class ChatComponents {
         }
         ItemStack preview = stack.copy();
         preview.setTag(null);
-        component.append(preview.getDisplayName()).append(" ");
+        component.append(itemName(preview)).append(" ");
         IFormattableTextComponent hover = new StringTextComponent(stack.getHoverName().getString())
                 .withStyle(TextFormatting.YELLOW)
                 .append("\n")
@@ -47,6 +47,11 @@ public final class ChatComponents {
         return component.append(new StringTextComponent("[i]").withStyle(style -> style
                 .withColor(TextFormatting.YELLOW)
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))));
+    }
+
+    private static ITextComponent itemName(ItemStack stack) {
+        return stack.getDisplayName().copy().withStyle(style -> style.withHoverEvent(
+                new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemHover(stack))));
     }
 
     public static ITextComponent entity(Entity entity) {
