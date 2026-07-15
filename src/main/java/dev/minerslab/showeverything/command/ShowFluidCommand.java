@@ -1,6 +1,7 @@
 package dev.minerslab.showeverything.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import dev.minerslab.showeverything.util.ChatComponents;
@@ -31,13 +32,16 @@ public final class ShowFluidCommand {
     }
 
     public static void register(CommandDispatcher<CommandSource> dispatcher) {
-        com.mojang.brigadier.tree.LiteralCommandNode<CommandSource> command = dispatcher.register(
-                Commands.literal("show-fluid")
+        dispatcher.register(command("show-fluid"));
+        dispatcher.register(command("showfluid"));
+    }
+
+    private static LiteralArgumentBuilder<CommandSource> command(String name) {
+        return Commands.literal(name)
                         .executes(context -> execute(context.getSource(), null))
                         .then(Commands.argument("pos", BlockPosArgument.blockPos())
                                 .executes(context -> execute(context.getSource(),
-                                        BlockPosArgument.getLoadedBlockPos(context, "pos")))));
-        dispatcher.register(Commands.literal("showfluid").redirect(command));
+                                        BlockPosArgument.getLoadedBlockPos(context, "pos"))));
     }
 
     private static int execute(CommandSource source, BlockPos requestedPos) throws CommandSyntaxException {

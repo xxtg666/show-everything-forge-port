@@ -1,6 +1,7 @@
 package dev.minerslab.showeverything.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import dev.minerslab.showeverything.network.NetworkHandler;
@@ -27,9 +28,14 @@ public final class ShowItemCommand {
     }
 
     public static void register(CommandDispatcher<CommandSource> dispatcher) {
-        com.mojang.brigadier.tree.LiteralCommandNode<CommandSource> command = dispatcher.register(
-                Commands.literal("show-item").executes(context -> execute(context.getSource())));
-        dispatcher.register(Commands.literal("showitem").redirect(command));
+        // Register aliases as complete command trees. Redirect-only roots can be
+        // synchronized without an executable no-argument child on 1.16 clients.
+        dispatcher.register(command("show-item"));
+        dispatcher.register(command("showitem"));
+    }
+
+    private static LiteralArgumentBuilder<CommandSource> command(String name) {
+        return Commands.literal(name).executes(context -> execute(context.getSource()));
     }
 
     private static int execute(CommandSource source) throws CommandSyntaxException {

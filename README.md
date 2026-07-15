@@ -25,7 +25,7 @@ This branch uses the official Forge `1.16.5-36.2.42` MDK and ForgeGradle 6:
 ./gradlew clean build
 ```
 
-The reobfuscated jar is written to `build/libs/showeverything-forge-1.16.5-1.0.2.jar`. Install it on the server; client installation is optional and enables full large-NBT hovers.
+The reobfuscated jar is written to `build/libs/showeverything-1.0.3-forge-1.16.5.jar`. Install it on the server; client installation is optional and enables full large-NBT hovers.
 
 ## License
 

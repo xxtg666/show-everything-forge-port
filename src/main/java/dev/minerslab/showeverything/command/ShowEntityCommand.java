@@ -1,6 +1,7 @@
 package dev.minerslab.showeverything.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
@@ -20,13 +21,16 @@ public final class ShowEntityCommand {
     }
 
     public static void register(CommandDispatcher<CommandSource> dispatcher) {
-        com.mojang.brigadier.tree.LiteralCommandNode<CommandSource> command = dispatcher.register(
-                Commands.literal("show-entity")
+        dispatcher.register(command("show-entity"));
+        dispatcher.register(command("showentity"));
+    }
+
+    private static LiteralArgumentBuilder<CommandSource> command(String name) {
+        return Commands.literal(name)
                         .executes(context -> execute(context.getSource(), null))
                         .then(Commands.argument("target", EntityArgument.entity())
                                 .executes(context -> execute(context.getSource(),
-                                        EntityArgument.getEntity(context, "target")))));
-        dispatcher.register(Commands.literal("showentity").redirect(command));
+                                        EntityArgument.getEntity(context, "target"))));
     }
 
     private static int execute(CommandSource source, Entity requestedEntity) throws CommandSyntaxException {
