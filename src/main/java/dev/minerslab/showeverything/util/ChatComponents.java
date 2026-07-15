@@ -27,11 +27,10 @@ public final class ChatComponents {
     }
 
     public static MutableComponent item(ItemStack stack) {
-        MutableComponent component = new TextComponent("");
-        if (stack.getCount() > 1) {
-            component.append(stack.getCount() + " * ");
-        }
-        return component.append(itemName(stack));
+        MutableComponent item = itemName(stack);
+        return stack.getCount() > 1
+                ? new TextComponent(stack.getCount() + " * ").append(item)
+                : item;
     }
 
     public static MutableComponent itemOmitted(ItemStack stack) {
