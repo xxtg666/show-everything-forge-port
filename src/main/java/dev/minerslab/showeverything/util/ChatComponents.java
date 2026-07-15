@@ -20,14 +20,12 @@ public final class ChatComponents {
     }
 
     public static MutableComponent item(ItemStack stack) {
-        MutableComponent component = Component.empty();
-        if (stack.getCount() > 1) {
-            component.append(stack.getCount() + " * ");
-        }
         MutableComponent displayName = stack.getDisplayName().copy().withStyle(style -> style
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM,
                         new HoverEvent.ItemStackInfo(stack))));
-        return component.append(displayName);
+        return stack.getCount() > 1
+                ? Component.literal(stack.getCount() + " * ").append(displayName)
+                : displayName;
     }
 
     public static MutableComponent itemMessage(ItemStack stack, Component suffix, boolean omitted) {
