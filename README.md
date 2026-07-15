@@ -1,21 +1,21 @@
-# Show Everything Forge 1.20.1
+# Show Everything NeoForge 1.21.1
 
-Forge 1.20.1 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
+NeoForge 1.21.1 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
 
-The mod lets players show their held item, the block or fluid under the crosshair, and a targeted entity in chat with hover details. Commands run on the server and are available to normal players. Clients without the mod can still join; clients with the same version receive complete oversized item hovers through the retained Forge custom packet/API, while other clients receive a bounded fallback.
+The mod lets players show their held item, the block or fluid under the crosshair, and a targeted entity in chat with hover details. Commands run on the server and are available to normal players. Clients without the mod can still join; clients with the same version receive complete oversized item hovers through the retained custom payload, while other clients receive a bounded fallback.
 
 ## Requirements
 
-- Minecraft `1.20.1`
-- Forge `47.4.10` or a compatible Forge 47 build
-- Java 17
+- Minecraft `1.21.1`
+- NeoForge `21.1.235` or newer compatible 21.1 build
+- Java 21
 
 ## Installation
 
-1. Put `showeverything-1.0.3-forge-1.20.1.jar` in the server `mods` folder.
+1. Put `showeverything-1.0.4-neoforge-1.21.1.jar` in the server `mods` folder.
 2. Restart the server.
 
-Client installation is optional. Install the same mod version client-side to receive complete hover data for items whose NBT is too large for vanilla chat.
+Client installation is optional. Install the same mod version client-side to receive complete hover data for items whose data components are too large for vanilla chat.
 
 ## Commands
 
@@ -34,13 +34,13 @@ Aliases without hyphens are also registered as complete commands: `/showitem`, `
 ./gradlew clean build
 ```
 
-The mod jar is written to `build/libs/showeverything-1.0.3-forge-1.20.1.jar`.
+The mod jar is written to `build/libs/showeverything-1.0.4-neoforge-1.21.1.jar`.
 
 ## Compatibility
 
-- The server and client must both use Minecraft/Forge 1.20.1 when the client mod is installed; no cross-version protocol compatibility is intended.
-- A vanilla or Forge client without Show Everything can still join because the client mod is optional.
-- The custom packet/API is retained for full large-NBT item hovers, with a safe reduced fallback for clients that cannot receive it.
+- The server and client must both use Minecraft 1.21.1 and NeoForge 21.1 when the client mod is installed; no cross-version protocol compatibility is intended.
+- A client without Show Everything can still join because the client payload is optional.
+- The custom payload is retained for full large-component item hovers, with a safe reduced fallback for clients that cannot receive it.
 - Block, fluid, and entity commands retain their 15-block crosshair raycasts and coordinate/selector forms.
 
 ## License

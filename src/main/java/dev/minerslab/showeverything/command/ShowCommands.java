@@ -16,6 +16,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
@@ -35,7 +37,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.registries.ForgeRegistries;
 
 public final class ShowCommands {
     private static final SimpleCommandExceptionType EMPTY_HAND = new SimpleCommandExceptionType(
@@ -97,7 +98,7 @@ public final class ShowCommands {
                 ChatComponents.token("id", ChatComponents.registryName(stack.getItem())));
         Component fullMessage = ChatComponents.itemMessage(stack, suffix, false);
         Component fullLine = ChatComponents.chatLine(player.getDisplayName(), player.getGameProfile().getName(), fullMessage);
-        if (ChatComponents.isSafe(fullLine)) {
+        if (ChatComponents.isSafe(fullLine, player.registryAccess())) {
             player.getServer().getPlayerList().broadcastSystemMessage(fullLine, false);
             return 1;
         }
@@ -108,7 +109,7 @@ public final class ShowCommands {
             if (NetworkHandler.hasClientMod(target)) {
                 ShowItemChatMessage packet = new ShowItemChatMessage(
                         player.getDisplayName().getString(), player.getGameProfile().getName(), stack, suffix);
-                if (packet.isSafePayload()) {
+                if (packet.isSafePayload(player.registryAccess())) {
                     NetworkHandler.sendTo(packet, target);
                 } else {
                     target.sendSystemMessage(ChatComponents.chatLine(player.getDisplayName(),
@@ -127,7 +128,7 @@ public final class ShowCommands {
         }
         if (oversizedClientPayload) {
             player.sendSystemMessage(Component.literal(
-                    "This item is too large to send full NBT even to modded clients.").withStyle(ChatFormatting.YELLOW));
+                    "This item is too large to send full item data even to modded clients.").withStyle(ChatFormatting.YELLOW));
         }
         return 1;
     }
@@ -153,9 +154,9 @@ public final class ShowCommands {
         }
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof Nameable && ((Nameable) blockEntity).hasCustomName()) {
-            stack.setHoverName(((Nameable) blockEntity).getDisplayName());
+            stack.set(DataComponents.CUSTOM_NAME, ((Nameable) blockEntity).getDisplayName());
         }
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(block);
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
         MutableComponent message = ChatComponents.item(stack)
                 .append(" ").append(ChatComponents.token("id", id == null ? "unknown" : id.toString()))
                 .append(" ").append(ChatComponents.position(pos));
@@ -181,7 +182,7 @@ public final class ShowCommands {
         if (stack.isEmpty()) {
             stack = new ItemStack(Items.BUCKET);
         }
-        ResourceLocation id = ForgeRegistries.FLUIDS.getKey(fluid);
+        ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluid);
         MutableComponent message = ChatComponents.item(stack)
                 .append(" ").append(ChatComponents.token("id", id == null ? "unknown" : id.toString()))
                 .append(" ").append(ChatComponents.position(pos));
@@ -196,7 +197,7 @@ public final class ShowCommands {
             EntityHitResult hit = Raycasts.entity(player);
             entity = hit == null ? player : hit.getEntity();
         }
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         HoverEvent.EntityTooltipInfo tooltip = new HoverEvent.EntityTooltipInfo(
                 entity.getType(), entity.getUUID(), entity.getDisplayName());
         MutableComponent name = entity.getDisplayName().copy().withStyle(style -> style
@@ -212,7 +213,7 @@ public final class ShowCommands {
     private static Component missingClientWarning(List<String> players) {
         String names = String.join("\n", players);
         Component hover = Component.literal("Missing client mod:\n" + names);
-        return Component.literal("Some players cannot see this item's full NBT ").withStyle(ChatFormatting.YELLOW)
+        return Component.literal("Some players cannot see this item's full item data ").withStyle(ChatFormatting.YELLOW)
                 .append(Component.literal("[i]").withStyle(style -> style.withColor(ChatFormatting.YELLOW)
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))));
     }

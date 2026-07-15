@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
           cache: gradle
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -24,6 +24,6 @@ jobs:
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:
-          name: showeverything-1.0.3-forge-1.20.1
-          path: build/libs/showeverything-1.0.3-forge-1.20.1.jar
+          name: showeverything-neoforge-build
+          path: build/libs/*.jar
           if-no-files-found: error

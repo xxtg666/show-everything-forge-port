@@ -3,7 +3,8 @@ package dev.minerslab.showeverything.util;
 import java.nio.charset.StandardCharsets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -11,7 +12,6 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 
 public final class ChatComponents {
     private static final int CHAT_STRING_LIMIT = 32767;
@@ -41,13 +41,11 @@ public final class ChatComponents {
     }
 
     private static MutableComponent itemOmitted(ItemStack stack) {
-        ItemStack preview = stack.copy();
-        CompoundTag tag = preview.getTag();
-        int nbtChars = tag == null ? 0 : tag.toString().length();
-        preview.setTag(null);
+        ItemStack preview = new ItemStack(stack.getItem(), stack.getCount());
+        int componentChars = stack.getComponentsPatch().toString().length();
         MutableComponent component = item(preview).append(" ");
         Component hover = Component.literal(stack.getHoverName().getString()).withStyle(ChatFormatting.YELLOW)
-                .append(Component.literal("\nNBT too large for vanilla chat hover (" + nbtChars + " chars); omitted.")
+                .append(Component.literal("\nItem data too large for vanilla chat hover (" + componentChars + " chars); omitted.")
                         .withStyle(ChatFormatting.GRAY));
         return component.append(Component.literal("[i]").withStyle(style -> style
                 .withColor(ChatFormatting.YELLOW)
@@ -71,13 +69,13 @@ public final class ChatComponents {
                 .append(": ").append(message);
     }
 
-    public static boolean isSafe(Component component) {
-        return Component.Serializer.toJson(component).getBytes(StandardCharsets.UTF_8).length <= CHAT_STRING_LIMIT;
+    public static boolean isSafe(Component component, HolderLookup.Provider registries) {
+        return Component.Serializer.toJson(component, registries).getBytes(StandardCharsets.UTF_8).length <= CHAT_STRING_LIMIT;
     }
 
     public static void broadcast(ServerPlayer sender, Component message) {
         Component line = chatLine(sender.getDisplayName(), sender.getGameProfile().getName(), message);
-        if (isSafe(line)) {
+        if (isSafe(line, sender.registryAccess())) {
             sender.getServer().getPlayerList().broadcastSystemMessage(line, false);
         } else {
             sender.sendSystemMessage(Component.literal("Show Everything message is too large to send safely.")
@@ -86,7 +84,7 @@ public final class ChatComponents {
     }
 
     public static String registryName(Item item) {
-        net.minecraft.resources.ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
+        net.minecraft.resources.ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
         return id == null ? "unknown" : id.toString();
     }
 }
