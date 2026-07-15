@@ -2,7 +2,6 @@ package dev.minerslab.showeverything.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,8 +17,12 @@ public final class ShowEntityCommand {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("show-entity")
-                .requires(source -> source.getEntity() instanceof ServerPlayer)
+        dispatcher.register(command("show-entity"));
+        dispatcher.register(command("showentity"));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> command(String name) {
+        return Commands.literal(name)
                 .executes(context -> {
                     ServerPlayer player = context.getSource().getPlayerOrException();
                     Entity target = Raycasts.entity(player, 15.0D);
@@ -30,8 +33,6 @@ public final class ShowEntityCommand {
                                 context.getSource(),
                                 EntityArgument.getEntity(context, "selector")
                         )));
-        LiteralCommandNode<CommandSourceStack> node = dispatcher.register(command);
-        dispatcher.register(Commands.literal("showentity").redirect(node));
     }
 
     private static int execute(CommandSourceStack source, Entity entity) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

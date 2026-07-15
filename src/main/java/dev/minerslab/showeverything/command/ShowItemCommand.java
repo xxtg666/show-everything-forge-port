@@ -2,7 +2,6 @@ package dev.minerslab.showeverything.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.minerslab.showeverything.network.NetworkHandler;
 import dev.minerslab.showeverything.network.ShowItemChatMessage;
 import dev.minerslab.showeverything.util.ChatComponents;
@@ -24,11 +23,13 @@ public final class ShowItemCommand {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("show-item")
-                .requires(source -> source.getEntity() instanceof ServerPlayer)
+        dispatcher.register(command("show-item"));
+        dispatcher.register(command("showitem"));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> command(String name) {
+        return Commands.literal(name)
                 .executes(context -> execute(context.getSource()));
-        LiteralCommandNode<CommandSourceStack> node = dispatcher.register(command);
-        dispatcher.register(Commands.literal("showitem").redirect(node));
     }
 
     private static int execute(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

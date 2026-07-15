@@ -14,7 +14,7 @@ When both sides have the mod, oversized `/show-item` data uses a bounded Forge c
 
 ## Installation
 
-1. Put `showeverything-forge-1.18.2-1.0.2.jar` in the server `mods` folder.
+1. Put `showeverything-1.0.3-forge-1.18.2.jar` in the server `mods` folder.
 2. Restart the server.
 
 Client installation is optional. Install the same mod version client-side only to see full hover data for items whose NBT is too large for vanilla chat.
@@ -38,7 +38,7 @@ Use the official Forge `1.18.2-40.2.21` MDK wrapper and Java 17:
 ./gradlew clean build
 ```
 
-The compiled mod is written to `build/libs/showeverything-forge-1.18.2-1.0.2.jar`.
+The compiled mod is written to `build/libs/showeverything-1.0.3-forge-1.18.2.jar`.
 
 ## License
 

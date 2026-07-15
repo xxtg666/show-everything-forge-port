@@ -2,7 +2,6 @@ package dev.minerslab.showeverything.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import net.minecraft.commands.CommandSourceStack;
@@ -26,16 +25,18 @@ public final class ShowBlockCommand {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("show-block")
-                .requires(source -> source.getEntity() instanceof ServerPlayer)
+        dispatcher.register(command("show-block"));
+        dispatcher.register(command("showblock"));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> command(String name) {
+        return Commands.literal(name)
                 .executes(context -> execute(context.getSource(), lookedAt(context.getSource().getPlayerOrException())))
                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
                         .executes(context -> execute(
                                 context.getSource(),
                                 BlockPosArgument.getLoadedBlockPos(context, "pos")
                         )));
-        LiteralCommandNode<CommandSourceStack> node = dispatcher.register(command);
-        dispatcher.register(Commands.literal("showblock").redirect(node));
     }
 
     private static BlockPos lookedAt(ServerPlayer player) {
