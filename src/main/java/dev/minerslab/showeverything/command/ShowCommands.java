@@ -1,7 +1,6 @@
 package dev.minerslab.showeverything.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
@@ -46,32 +45,42 @@ public final class ShowCommands {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        registerWithAlias(dispatcher, "show-item", "showitem", Commands.literal("show-item")
-                .executes(ShowCommands::showItem));
-
-        LiteralArgumentBuilder<CommandSourceStack> block = Commands.literal("show-block")
-                .executes(context -> showBlock(context, null))
-                .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                        .executes(context -> showBlock(context, BlockPosArgument.getLoadedBlockPos(context, "pos"))));
-        registerWithAlias(dispatcher, "show-block", "showblock", block);
-
-        LiteralArgumentBuilder<CommandSourceStack> fluid = Commands.literal("show-fluid")
-                .executes(context -> showFluid(context, null))
-                .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                        .executes(context -> showFluid(context, BlockPosArgument.getLoadedBlockPos(context, "pos"))));
-        registerWithAlias(dispatcher, "show-fluid", "showfluid", fluid);
-
-        LiteralArgumentBuilder<CommandSourceStack> entity = Commands.literal("show-entity")
-                .executes(context -> showEntity(context, null))
-                .then(Commands.argument("entity", EntityArgument.entity())
-                        .executes(context -> showEntity(context, EntityArgument.getEntity(context, "entity"))));
-        registerWithAlias(dispatcher, "show-entity", "showentity", entity);
+        registerItem(dispatcher, "show-item");
+        registerItem(dispatcher, "showitem");
+        registerBlock(dispatcher, "show-block");
+        registerBlock(dispatcher, "showblock");
+        registerFluid(dispatcher, "show-fluid");
+        registerFluid(dispatcher, "showfluid");
+        registerEntity(dispatcher, "show-entity");
+        registerEntity(dispatcher, "showentity");
     }
 
-    private static void registerWithAlias(CommandDispatcher<CommandSourceStack> dispatcher, String name, String alias,
-                                          LiteralArgumentBuilder<CommandSourceStack> command) {
-        com.mojang.brigadier.tree.LiteralCommandNode<CommandSourceStack> node = dispatcher.register(command);
-        dispatcher.register(Commands.literal(alias).redirect(node));
+    private static void registerItem(CommandDispatcher<CommandSourceStack> dispatcher, String name) {
+        dispatcher.register(Commands.literal(name).executes(ShowCommands::showItem));
+    }
+
+    private static void registerBlock(CommandDispatcher<CommandSourceStack> dispatcher, String name) {
+        dispatcher.register(Commands.literal(name)
+                .executes(context -> showBlock(context, null))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .executes(context -> showBlock(
+                                context, BlockPosArgument.getLoadedBlockPos(context, "pos")))));
+    }
+
+    private static void registerFluid(CommandDispatcher<CommandSourceStack> dispatcher, String name) {
+        dispatcher.register(Commands.literal(name)
+                .executes(context -> showFluid(context, null))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .executes(context -> showFluid(
+                                context, BlockPosArgument.getLoadedBlockPos(context, "pos")))));
+    }
+
+    private static void registerEntity(CommandDispatcher<CommandSourceStack> dispatcher, String name) {
+        dispatcher.register(Commands.literal(name)
+                .executes(context -> showEntity(context, null))
+                .then(Commands.argument("entity", EntityArgument.entity())
+                        .executes(context -> showEntity(
+                                context, EntityArgument.getEntity(context, "entity")))));
     }
 
     private static int showItem(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
