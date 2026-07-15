@@ -31,7 +31,7 @@ public final class ChatComponents {
         if (stack.getCount() > 1) {
             component.append(stack.getCount() + " * ");
         }
-        return component.append(stack.getDisplayName());
+        return component.append(itemName(stack));
     }
 
     public static MutableComponent itemOmitted(ItemStack stack) {
@@ -41,11 +41,16 @@ public final class ChatComponents {
         }
         ItemStack preview = stack.copy();
         preview.setTag(null);
-        component.append(preview.getDisplayName());
+        component.append(itemName(preview));
         MutableComponent hover = new TextComponent(stack.getHoverName().getString())
                 .withStyle(ChatFormatting.YELLOW)
                 .append(new TextComponent("\nNBT omitted for packet safety.").withStyle(ChatFormatting.GRAY));
         return component.append(" ").append(infoToken(hover));
+    }
+
+    private static MutableComponent itemName(ItemStack stack) {
+        return stack.getDisplayName().copy().withStyle(style -> style.withHoverEvent(
+                new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(stack))));
     }
 
     public static MutableComponent entity(Entity entity) {
