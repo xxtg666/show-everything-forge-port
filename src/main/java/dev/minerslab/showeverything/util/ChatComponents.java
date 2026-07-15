@@ -24,11 +24,10 @@ public final class ChatComponents {
     }
 
     public static ITextComponent item(ItemStack stack) {
-        IFormattableTextComponent component = new StringTextComponent("");
-        if (stack.getCount() > 1) {
-            component.append(stack.getCount() + " * ");
-        }
-        return component.append(itemName(stack));
+        ITextComponent item = itemName(stack);
+        return stack.getCount() > 1
+                ? new StringTextComponent(stack.getCount() + " * ").append(item)
+                : item;
     }
 
     public static ITextComponent itemOmitted(ItemStack stack) {
