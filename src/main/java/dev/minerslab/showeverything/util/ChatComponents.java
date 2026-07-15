@@ -20,11 +20,19 @@ public final class ChatComponents {
     }
 
     public static MutableComponent item(ItemStack stack) {
-        MutableComponent component = Component.empty();
-        if (stack.getCount() > 1) {
-            component.append(stack.getCount() + " * ");
-        }
-        return component.append(stack.getDisplayName());
+        MutableComponent item = nativeItemComponent(stack);
+        return stack.getCount() > 1
+                ? Component.literal(stack.getCount() + " * ").append(item)
+                : item;
+    }
+
+    /**
+     * Keep the vanilla item name styling while making the native SHOW_ITEM
+     * payload explicit for clients that render item chat components.
+     */
+    private static MutableComponent nativeItemComponent(ItemStack stack) {
+        return stack.getDisplayName().copy().withStyle(style -> style.withHoverEvent(
+                new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(stack))));
     }
 
     public static MutableComponent itemMessage(ItemStack stack, Component suffix, boolean omitted) {
