@@ -24,7 +24,7 @@ import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidBlock;
 
-public class ShowFluidCommand extends CommandBase {
+public class ShowFluidCommand extends ShowEverythingCommand {
     @Override
     public String getCommandName() {
         return "show-fluid";

@@ -18,7 +18,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.event.HoverEvent;
 
-public class ShowItemCommand extends CommandBase {
+public class ShowItemCommand extends ShowEverythingCommand {
     @Override
     public String getCommandName() {
         return "show-item";

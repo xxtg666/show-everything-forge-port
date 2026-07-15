@@ -1,10 +1,6 @@
 # Show Everything Forge 1.7.10
 
-Forge 1.7.10 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
-
-Show items, blocks, fluids, and entities in chat with hover details. Command logic runs on the server, and the mod accepts clients that do not have Show Everything installed.
-
-Clients that also install the mod get enhanced `/show-item` rendering for very large item NBT. Clients without it receive a shortened safe hover so oversized NBT cannot exceed Minecraft 1.7.10's chat packet limit.
+Forge 1.7.10 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything). The mod lets players show the item in hand and the block, fluid, or entity under their crosshair in chat with hover details. All commands run on the server and remain available to non-OP players.
 
 ## Requirements
 
@@ -14,15 +10,12 @@ Clients that also install the mod get enhanced `/show-item` rendering for very l
 
 ## Installation
 
-1. Build or download `showeverything-forge-1.7.10-1.0.2.jar`.
-2. Put the jar in the server `mods` folder.
-3. Restart the server.
+1. Put `showeverything-1.0.3-forge-1.7.10.jar` in the server `mods` folder.
+2. Restart the server.
 
-Client installation is optional. A server with this mod still accepts clients without it. Install it client-side only to see full hover data for unusually large item NBT.
+Client installation is optional. Install the same mod version client-side to receive complete hover data for unusually large item NBT; clients without the mod receive a bounded preview.
 
 ## Commands
-
-All commands are available to normal players.
 
 | Command | Description |
 | --- | --- |
@@ -32,9 +25,9 @@ All commands are available to normal players.
 | `/show-fluid` | Shows the fluid looked at within 15 blocks, falling back to the player's position. |
 | `/show-fluid <x> <y> <z>` | Shows the fluid at specific coordinates. |
 | `/show-entity` | Shows the entity looked at within 15 blocks, falling back to the player. |
-| `/show-entity <player-or-selector>` | Shows a selected entity. |
+| `/show-entity <player-or-selector>` | Shows a selected player entity. |
 
-Aliases without hyphens are also available, such as `/showitem` and `/showblock`.
+Hyphenless aliases are also registered, including `/showitem`, `/showblock`, `/showfluid`, and `/showentity`.
 
 ## Build
 
@@ -47,11 +40,18 @@ Use Java 8 and run:
 The compiled mod jar is written to:
 
 ```text
-build/libs/showeverything-forge-1.7.10-1.0.2.jar
+build/libs/showeverything-1.0.3-forge-1.7.10.jar
 ```
 
 This branch uses the official Forge `1.7.10-10.13.4.1614-1.7.10` source distribution baseline with ForgeGradle 1.2 and Gradle 2.0.
 
+## Compatibility
+
+- The server and client must both use Minecraft/Forge 1.7.10 when the client mod is installed; no cross-version protocol compatibility is intended.
+- A vanilla or Forge client without Show Everything can still join because the client mod is optional.
+- The custom packet/API is retained for full large-NBT item hovers, with a safe reduced fallback for clients that cannot receive it.
+- 1.7.10's native item chat component provides the item name, rarity color, and hover tooltip. This Minecraft version has no inline chat item-icon renderer.
+
 ## License
 
-This port is maintained by xxtg666 and follows the repository license. The original mod is by MinersLab/WowStarWorld.
+MIT. The original mod is by MinersLab/WowStarWorld; this port is maintained by xxtg666.

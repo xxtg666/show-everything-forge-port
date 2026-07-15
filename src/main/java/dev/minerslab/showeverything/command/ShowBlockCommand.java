@@ -19,7 +19,7 @@ import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
-public class ShowBlockCommand extends CommandBase {
+public class ShowBlockCommand extends ShowEverythingCommand {
     @Override
     public String getCommandName() {
         return "show-block";

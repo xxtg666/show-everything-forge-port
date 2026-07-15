@@ -17,7 +17,7 @@ buildscript {
 
 apply plugin: 'forge'
 
-version = "1.0.2"
+version = "1.0.3"
 group = "dev.minerslab.showeverything"
 archivesBaseName = "showeverything-forge-${project.mc_version}"
 
@@ -26,6 +26,11 @@ sourceCompatibility = targetCompatibility = '1.7'
 minecraft {
     version = project.forge_version
     runDir = "run"
+}
+
+// Keep the release version in the requested position in the final jar name.
+jar {
+    archiveName = "showeverything-${project.version}-forge-${project.mc_version}.jar"
 }
 
 // ForgeGradle 1.2 predates Mojang's current launcher endpoints and otherwise

@@ -17,7 +17,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MovingObjectPosition;
 
-public class ShowEntityCommand extends CommandBase {
+public class ShowEntityCommand extends ShowEverythingCommand {
     @Override
     public String getCommandName() {
         return "show-entity";
