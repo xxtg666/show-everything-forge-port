@@ -1,32 +1,50 @@
 # Show Everything Forge 1.16.5
 
-Show items, blocks, fluids, and entities in chat with hover details. Commands run on the server and the mod declares missing clients as optional, so vanilla/Forge clients can still join.
+Forge 1.16.5 port of [MinersLab/show-everything](https://github.com/MinersLab/show-everything).
 
-When an item NBT payload is too large for a normal 1.16.5 chat packet, clients with this mod receive a Forge custom packet and render the complete item hover locally. Clients without the mod receive a bounded preview with NBT omitted.
+The mod lets players show their held item, the block or fluid under the crosshair, and a targeted entity in chat with hover details. Commands run on the server and are available to normal players. Clients without the mod can still join; clients with the same version receive complete oversized item hovers through the retained Forge custom packet/API, while other clients receive a bounded fallback.
 
 ## Requirements
 
 - Minecraft `1.16.5`
 - Forge `36.2.42` (or a compatible Forge 36 build)
-- Java 8 runtime for Minecraft; Java 17 is used by the build environment
+- Java 8 for the game runtime; Java 17 is used by the build environment
+
+## Installation
+
+1. Put `showeverything-1.0.3-forge-1.16.5.jar` in the server `mods` folder.
+2. Restart the server.
+
+Client installation is optional. Install the same mod version client-side to receive complete hover data for items whose NBT is too large for vanilla chat.
 
 ## Commands
 
-- `/show-item` (`/showitem`) shows the main-hand item, falling back to offhand.
-- `/show-block` (`/showblock`) shows the block in the 15-block view ray; coordinates can be supplied.
-- `/show-fluid` (`/showfluid`) shows the fluid in the view ray; coordinates can be supplied.
-- `/show-entity` (`/showentity`) shows the entity in the view ray, or an entity selected by Brigadier selector.
+| Command | Description |
+| --- | --- |
+| `/show-item` | Shows the item in the main hand, or the offhand when the main hand is empty. |
+| `/show-block [x y z]` | Shows the looked-at block, or the block at the optional position. |
+| `/show-fluid [x y z]` | Shows the looked-at fluid, or the fluid at the optional position. |
+| `/show-entity [selector]` | Shows the looked-at entity, or the selected entity. |
+
+Aliases without hyphens are also registered as complete commands: `/showitem`, `/showblock`, `/showfluid`, and `/showentity`.
 
 ## Build
 
-This branch uses the official Forge `1.16.5-36.2.42` MDK and ForgeGradle 6:
+Use the official Forge `1.16.5-36.2.42` MDK wrapper:
 
 ```bash
 ./gradlew clean build
 ```
 
-The reobfuscated jar is written to `build/libs/showeverything-1.0.3-forge-1.16.5.jar`. Install it on the server; client installation is optional and enables full large-NBT hovers.
+The compiled mod jar is written to `build/libs/showeverything-1.0.3-forge-1.16.5.jar`.
+
+## Compatibility
+
+- The server and client must both use Minecraft/Forge 1.16.5 when the client mod is installed; no cross-version protocol compatibility is intended.
+- A vanilla or Forge client without Show Everything can still join because the client mod is optional.
+- The custom packet/API is retained for full large-NBT item hovers, with a safe reduced fallback for clients that cannot receive it.
+- Block, fluid, and entity commands retain their 15-block crosshair raycasts and coordinate/selector forms.
 
 ## License
 
-MIT. The original mod is by MinersLab/WowStarWorld.
+MIT. The original mod is by MinersLab/WowStarWorld; this port is maintained by xxtg666.
