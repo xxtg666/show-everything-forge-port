@@ -24,6 +24,6 @@ jobs:
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:
-          name: showeverything-forge-1.19.2
-          path: build/libs/showeverything-forge-1.19.2-*.jar
+          name: showeverything-1.0.3-forge-1.19.2
+          path: build/libs/showeverything-1.0.3-forge-1.19.2.jar
           if-no-files-found: error

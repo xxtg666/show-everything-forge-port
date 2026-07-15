@@ -1,5 +1,6 @@
 package dev.minerslab.showeverything.command;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -11,6 +12,7 @@ import dev.minerslab.showeverything.util.ChatComponents;
 import dev.minerslab.showeverything.util.Raycasts;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -71,7 +73,13 @@ public final class ShowCommands {
     private static void registerWithAlias(CommandDispatcher<CommandSourceStack> dispatcher, String name, String alias,
                                           LiteralArgumentBuilder<CommandSourceStack> command) {
         com.mojang.brigadier.tree.LiteralCommandNode<CommandSourceStack> node = dispatcher.register(command);
-        dispatcher.register(Commands.literal(alias).redirect(node));
+        Command<CommandSourceStack> rootCommand = Objects.requireNonNull(
+                node.getCommand(), "Missing no-argument executor for /" + name);
+        // Brigadier redirects only carry child arguments; without an explicit command,
+        // an alias used on its own is parsed as an incomplete command.
+        dispatcher.register(Commands.literal(alias)
+                .executes(rootCommand)
+                .redirect(node));
     }
 
     private static int showItem(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

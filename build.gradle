@@ -43,6 +43,7 @@ tasks.named('processResources', ProcessResources).configure {
 }
 
 tasks.named('jar', Jar).configure {
+    archiveFileName = "${mod_id}-${mod_version}-forge-${minecraft_version}.jar"
     manifest {
         attributes(['Specification-Title': mod_id, 'Specification-Vendor': mod_authors,
                     'Specification-Version': '1', 'Implementation-Title': mod_name,

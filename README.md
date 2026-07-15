@@ -16,7 +16,7 @@ The mod adds `/show-item`, `/show-block`, `/show-fluid`, and `/show-entity`, plu
 ./gradlew clean build
 ```
 
-The mod jar is written to `build/libs/showeverything-forge-1.19.2-1.0.2.jar`.
+The mod jar is written to `build/libs/showeverything-1.0.3-forge-1.19.2.jar`.
 
 ## License
 
